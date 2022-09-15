@@ -1,0 +1,18 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
+}
+
+apply from: script_android_app
+
+apply from: script_dependencies_common
+apply from: script_dependencies_compose
+
+dependencies {
+    implementation module_core_common
+    implementation module_core_chatsdk
+    implementation module_core_auth
+
+    implementation module_feature_home
+}

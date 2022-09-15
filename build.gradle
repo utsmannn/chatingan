@@ -1,0 +1,37 @@
+buildscript {
+    ext {
+        compose_version = "1.2.1"
+
+        version_sdk = 33
+        version_app = "1.0.0"
+
+        script_android_app = "$rootDir/gradle/scripts/android.app.gradle"
+        script_android_lib = "$rootDir/gradle/scripts/android.lib.gradle"
+
+        script_dependencies_common = "$rootDir/gradle/scripts/dependencies.common.gradle"
+        script_dependencies_compose = "$rootDir/gradle/scripts/dependencies.compose.gradle"
+        script_dependencies_network = "$rootDir/gradle/scripts/dependencies.network.gradle"
+        script_dependencies_auth = "$rootDir/gradle/scripts/dependencies.auth.gradle"
+
+        module_core_common = project(":core:common")
+        module_core_chatsdk = project(":core:chat-sdk")
+        module_core_network = project(":core:network")
+        module_core_auth = project(":core:auth")
+
+        module_feature_home = project(":features:home")
+    }
+
+    dependencies {
+        classpath 'com.google.gms:google-services:4.3.13'
+
+    }
+}// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    id 'com.android.application' version '7.2.1' apply false
+    id 'com.android.library' version '7.2.1' apply false
+    id 'org.jetbrains.kotlin.android' version '1.7.10' apply false
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

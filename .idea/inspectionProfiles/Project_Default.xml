@@ -1,0 +1,23 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PreviewAnnotationInFunctionWithParameters" enabled="$IS_MITME_DEV$" level="ERROR" enabled_by_default="$IS_MITME_DEV$">
+      <option name="previewFile" value="$IS_MITME_DEV$" />
+    </inspection_tool>
+    <inspection_tool class="PreviewDimensionRespectsLimit" enabled="$IS_MITME_DEV$" level="WARNING" enabled_by_default="$IS_MITME_DEV$">
+      <option name="previewFile" value="$IS_MITME_DEV$" />
+    </inspection_tool>
+    <inspection_tool class="PreviewMultipleParameterProviders" enabled="$IS_MITME_DEV$" level="ERROR" enabled_by_default="$IS_MITME_DEV$">
+      <option name="previewFile" value="$IS_MITME_DEV$" />
+    </inspection_tool>
+    <inspection_tool class="PreviewMustBeTopLevelFunction" enabled="$IS_MITME_DEV$" level="ERROR" enabled_by_default="$IS_MITME_DEV$">
+      <option name="previewFile" value="$IS_MITME_DEV$" />
+    </inspection_tool>
+    <inspection_tool class="PreviewNeedsComposableAnnotation" enabled="$IS_MITME_DEV$" level="ERROR" enabled_by_default="$IS_MITME_DEV$">
+      <option name="previewFile" value="$IS_MITME_DEV$" />
+    </inspection_tool>
+    <inspection_tool class="PreviewPickerAnnotation" enabled="$IS_MITME_DEV$" level="ERROR" enabled_by_default="$IS_MITME_DEV$">
+      <option name="previewFile" value="$IS_MITME_DEV$" />
+    </inspection_tool>
+  </profile>
+</component>

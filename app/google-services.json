@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "796530865970",
+    "project_id": "aej-chat-test",
+    "storage_bucket": "aej-chat-test.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:796530865970:android:a8ba42ffe940ea8939892b",
+        "android_client_info": {
+          "package_name": "com.utsman.chatingan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "796530865970-qg4njcjecbdlg1f8bqn4f30mr1ooc0h1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.utsman.chatingan",
+            "certificate_hash": "5f563f5ebedbfafb85c7ff0932d264141ed65de2"
+          }
+        },
+        {
+          "client_id": "796530865970-pjfu8fl3gevh8p3p14e6ophspftj118v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2_mW0YTHIdrTHUeU_sxovfIjikDZeb-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "796530865970-pjfu8fl3gevh8p3p14e6ophspftj118v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

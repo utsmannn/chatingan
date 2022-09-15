@@ -1,0 +1,13 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+
+apply from: script_android_lib
+
+apply from: script_dependencies_common
+apply from: script_dependencies_auth
+
+dependencies {
+    implementation module_core_common
+}
