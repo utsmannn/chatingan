@@ -5,6 +5,7 @@ plugins {
 
 apply from: script_android_lib
 
+apply from: script_dependencies_fcm
 apply from: script_dependencies_common
 apply from: script_dependencies_auth
 

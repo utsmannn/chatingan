@@ -1,0 +1,14 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+
+apply from: script_android_lib
+
+apply from: script_dependencies_common
+apply from: script_dependencies_compose
+
+dependencies {
+    implementation module_core_chatsdk
+    implementation 'com.google.code.gson:gson:2.9.1'
+}

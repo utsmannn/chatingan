@@ -1,10 +1,9 @@
 package com.utsman.chatingan.login.repository
 
-import com.utsman.chatingan.auth.AuthComponent
+import com.utsman.chatingan.auth.component.AuthComponent
 import com.utsman.chatingan.auth.data.User
 import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.koin.KoinInjector
-import kotlinx.coroutines.CoroutineScope
 import org.koin.core.module.Module
 import org.koin.dsl.module
 

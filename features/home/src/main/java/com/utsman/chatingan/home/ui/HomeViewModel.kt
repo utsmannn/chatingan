@@ -13,9 +13,21 @@ class HomeViewModel(
     private val homeRepository: HomeRepository
 ) : ViewModel() {
     val userState = homeRepository.userState
+    val contactState = homeRepository.contactState
+    val tokenState = homeRepository.tokenState
+
+    init {
+        viewModelScope.launch {
+            homeRepository.getContacts()
+        }
+    }
 
     fun getUser() = viewModelScope.launch {
         homeRepository.getUser()
+    }
+
+    fun token(id: String) = viewModelScope.launch {
+        //homeRepository.getTokenId(id)
     }
 
     companion object : KoinInjector {

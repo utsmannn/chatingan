@@ -7,12 +7,16 @@ plugins {
 apply from: script_android_app
 
 apply from: script_dependencies_common
+apply from: script_dependencies_fcm
 apply from: script_dependencies_compose
 
 dependencies {
     implementation module_core_common
     implementation module_core_chatsdk
     implementation module_core_auth
+    implementation module_core_navigation
 
     implementation module_feature_home
+    implementation module_feature_contact
+    implementation module_feature_chat
 }
