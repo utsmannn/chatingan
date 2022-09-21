@@ -7,18 +7,21 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.utsman.chatingan.auth.AuthComponent
+import com.google.firebase.messaging.FirebaseMessaging
+import com.utsman.chatingan.auth.component.AuthComponent
 import com.utsman.chatingan.auth.data.AuthMapper
 import com.utsman.chatingan.auth.data.User
 import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.koin.KoinInjector
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import kotlin.coroutines.resume
 
 class AuthDataSources {
 
@@ -34,6 +37,38 @@ class AuthDataSources {
             .build()
             .run {
                 GoogleSignIn.getClient(activity, this)
+            }
+    }
+
+    suspend fun firebaseToken(): String {
+        return withContext(Dispatchers.IO) {
+            suspendCancellableCoroutine { task ->
+                FirebaseMessaging.getInstance().token
+                    .addOnCompleteListener { taskFcm ->
+                        if (!taskFcm.isSuccessful) {
+                            task.cancel()
+                        }
+
+                        task.resume(taskFcm.result)
+                    }
+                    .addOnFailureListener {
+                        task.cancel(it)
+                    }
+            }
+        }
+    }
+
+    fun firebaseToken(result: (String) -> Unit) {
+        FirebaseMessaging.getInstance().token
+            .addOnCompleteListener { taskFcm ->
+                if (!taskFcm.isSuccessful) {
+                    result.invoke("")
+                }
+
+                result.invoke(taskFcm.result)
+            }
+            .addOnFailureListener {
+                result.invoke("")
             }
     }
 

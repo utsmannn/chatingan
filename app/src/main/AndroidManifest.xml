@@ -17,7 +17,7 @@
         android:theme="@style/Theme.Chatingan"
         tools:targetApi="31">
         <service
-            android:name=".ChatinganFirebaseService"
+            android:name=".services.ChatinganFirebaseService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
@@ -35,7 +35,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".login.ui.LoginActivity"/>
+
     </application>
 
 </manifest>
