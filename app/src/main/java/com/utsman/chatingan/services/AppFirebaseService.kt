@@ -3,7 +3,7 @@ package com.utsman.chatingan.services
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
-class ChatinganFirebaseService : FirebaseMessagingService() {
+class AppFirebaseService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)

@@ -18,12 +18,12 @@ import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
-class ChatinganApplication : Application() {
+class AppApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
         startKoin {
-            androidContext(this@ChatinganApplication)
+            androidContext(this@AppApplication)
             moduleListOf(
                 AuthModule.modules(),
                 AppModule.modules(),

@@ -15,7 +15,7 @@ import com.utsman.chatingan.sdk.data.entity.Contact
 import org.koin.core.context.loadKoinModules
 import org.koin.dsl.module
 
-class ChatinganNavigationProvider(
+class AppNavigationProvider(
     override val navHostController: NavHostController
 ) : NavigationProvider {
 
@@ -65,7 +65,7 @@ class ChatinganNavigationProvider(
 
         fun initialize(navHostController: NavHostController) {
             val module = module {
-                single<NavigationProvider> { ChatinganNavigationProvider(navHostController) }
+                single<NavigationProvider> { AppNavigationProvider(navHostController) }
             }
             loadKoinModules(module)
         }

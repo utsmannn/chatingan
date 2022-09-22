@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.utsman.chatingan.ChatinganNavigationProvider
+import com.utsman.chatingan.AppNavigationProvider
 import com.utsman.chatingan.auth.component.AuthComponent
 import com.utsman.chatingan.chat.routes.ChatRoute
 import com.utsman.chatingan.navigation.NavigationProvider
@@ -25,7 +25,7 @@ fun ChatinganApp(
     authComponent: AuthComponent
 ) {
     val navHostController = rememberNavController()
-    ChatinganNavigationProvider.initialize(navHostController)
+    AppNavigationProvider.initialize(navHostController)
 
     NavHost(navController = navHostController, startDestination = AppRoute.Main.getValue()) {
         composable(AppRoute.Main.getValue()) {

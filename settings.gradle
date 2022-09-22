@@ -14,7 +14,7 @@ dependencyResolutionManagement {
 }
 rootProject.name = "chatingan"
 include ':app'
-include ':core:chat-sdk'
+include ':sdk'
 include ':core:common'
 include ':core:network'
 include ':core:auth'
