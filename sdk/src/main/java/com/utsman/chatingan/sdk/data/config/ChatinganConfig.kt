@@ -5,6 +5,7 @@ import java.util.*
 
 data class ChatinganConfig(
     var serverKey: String = "",
+    var fcmToken: String = "",
     var contact: Contact = Contact()
 ) {
 
@@ -35,6 +36,7 @@ data class ChatinganConfig(
 
     class ChatinganConfigBuilder {
         private var serverKey: String = ""
+        private var fcmToken: String = ""
         private var contact: Contact = Contact()
 
         fun setServerKey(serverKey: String): ChatinganConfigBuilder {
@@ -47,8 +49,13 @@ data class ChatinganConfig(
             return this
         }
 
+        fun setFcmToken(fcmToken: String): ChatinganConfigBuilder {
+            this.fcmToken = fcmToken
+            return this
+        }
+
         fun build(): ChatinganConfig {
-            return ChatinganConfig(serverKey, contact)
+            return ChatinganConfig(serverKey, fcmToken, contact)
         }
     }
 }

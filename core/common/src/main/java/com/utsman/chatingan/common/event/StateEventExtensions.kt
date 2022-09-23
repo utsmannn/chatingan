@@ -10,6 +10,7 @@ import com.utsman.chatingan.common.ui.FailureScreen
 import com.utsman.chatingan.common.ui.LoadingScreen
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlin.coroutines.CoroutineContext
@@ -75,7 +76,9 @@ inline fun <T> FlowEvent<T>.composeStateOf(
     onEmpty: @Composable () -> Unit = { EmptyScreen() },
     onSuccess: @Composable T.() -> Unit
 ) {
-    when (val state = collectAsState().value) {
+    when (val state = this.distinctUntilChanged { old, new ->
+        old.invoke() == new.invoke()
+    }.collectAsState(StateEvent.Idle()).value) {
         is StateEvent.Idle -> onIdle.invoke()
         is StateEvent.Loading -> onLoading.invoke()
         is StateEvent.Failure -> onFailure.invoke(state.exception)
@@ -134,6 +137,20 @@ inline fun <reified T> StateEvent<T>.onSuccess(data: (T) -> Unit) {
     if (this is StateEvent.Success) {
         data.invoke(this.data)
     }
+}
+
+inline fun <reified T> StateEvent<T>.doOnIdle(action: () -> Unit): StateEvent<T> {
+    if (this is StateEvent.Idle) {
+        action.invoke()
+    }
+    return this
+}
+
+inline fun <reified T> StateEvent<T>.doOnLoading(action: () -> Unit): StateEvent<T> {
+    if (this is StateEvent.Loading) {
+        action.invoke()
+    }
+    return this
 }
 
 inline fun <reified T> StateEvent<T>.doOnSuccess(data: (T) -> Unit): StateEvent<T> {

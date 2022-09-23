@@ -108,7 +108,6 @@ class AuthDataSources {
             val userLoadingState = StateEvent.Loading<User>()
             emit(userLoadingState)
 
-            delay(3000)
             val userFinalState = FirebaseAuth.getInstance()
                 .currentUser
                 .let {

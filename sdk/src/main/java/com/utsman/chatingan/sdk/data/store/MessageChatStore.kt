@@ -34,14 +34,14 @@ data class MessageChatStore(
         private const val FIELD_SENDER_ID = "senderId"
         private const val FIELD_RECEIVER_ID = "receiverId"
         private const val FIELD_MESSAGE_BODY = "messageBody"
-        internal const val FIELD_LAST_UPDATE = "lastUpdate"
 
-        fun build(senderId: String, receiverId: String, message: String): MessageChatStore {
+        fun build(senderId: String, receiverId: String, message: String, date: Date): MessageChatStore {
             return MessageChatStore(
                 id = UUID.randomUUID().toString(),
                 senderId = senderId,
                 receiverId = receiverId,
-                messageBody = message
+                messageBody = message,
+                lastUpdate = date
             )
         }
 

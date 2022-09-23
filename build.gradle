@@ -2,7 +2,7 @@ buildscript {
     ext {
         compose_version = "1.2.1"
 
-        version_sdk = 33
+        version_sdk = 32
         version_app = "1.0.0"
 
         script_android_app = "$rootDir/gradle/scripts/android.app.gradle"

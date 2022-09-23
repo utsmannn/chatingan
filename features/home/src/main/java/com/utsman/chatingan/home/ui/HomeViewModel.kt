@@ -16,9 +16,12 @@ class HomeViewModel(
     val contactState = homeRepository.contactState
     val tokenState = homeRepository.tokenState
 
+    val chatState = homeRepository.chatsState
+
     init {
         viewModelScope.launch {
-            homeRepository.getContacts()
+            //homeRepository.getContacts()
+            homeRepository.getChats()
         }
     }
 

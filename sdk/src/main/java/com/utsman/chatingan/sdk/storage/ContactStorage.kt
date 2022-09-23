@@ -19,7 +19,7 @@ class ContactStorage : Storage<ContactStore, Contact>() {
     }
 
     override fun dateField(): String {
-        return ContactStore.FIELD_LAST_UPDATE
+        return FIELD_LAST_UPDATE
     }
 
     companion object {

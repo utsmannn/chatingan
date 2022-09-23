@@ -32,7 +32,6 @@ data class ContactStore(
         private const val FIELD_NAME = "name"
         private const val FIELD_IMAGE = "image"
         private const val FIELD_TOKEN = "token"
-        internal const val FIELD_LAST_UPDATE = "lastUpdate"
 
         fun fromMap(data: Map<String, Any>, date: Date): ContactStore {
             return ContactStore(

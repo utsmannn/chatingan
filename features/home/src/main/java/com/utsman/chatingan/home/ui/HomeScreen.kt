@@ -1,22 +1,45 @@
 package com.utsman.chatingan.home.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
-import androidx.compose.material.Button
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.utsman.chatingan.navigation.NavigationProvider
-import com.utsman.chatingan.common.event.composeStateOf
+import com.utsman.chatingan.common.event.doOnFailure
+import com.utsman.chatingan.common.event.doOnLoading
+import com.utsman.chatingan.common.event.onSuccess
 import com.utsman.chatingan.common.ui.component.ColumnCenter
-import com.utsman.chatingan.common.ui.EmptyScreen
 import com.utsman.chatingan.common.ui.FailureScreen
 import com.utsman.chatingan.common.ui.LoadingScreen
+import com.utsman.chatingan.common.ui.clickableRipple
+import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.home.R
+import com.utsman.chatingan.sdk.Chatingan
+import com.utsman.chatingan.sdk.data.entity.Contact
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 
@@ -25,6 +48,10 @@ fun HomeScreen(
     navigationProvider: NavigationProvider = get(),
     viewModel: HomeViewModel = getViewModel()
 ) {
+    val chatsState by viewModel.chatState.collectAsState()
+    val context = LocalContext.current
+
+    viewModel.getUser()
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -42,43 +69,83 @@ fun HomeScreen(
         }
     ) {
         ColumnCenter {
-            viewModel.userState.composeStateOf(
-                onIdle = {
-                    viewModel.getUser()
-                },
-                onLoading = {
-                    LoadingScreen()
-                },
-                onSuccess = {
-                    Text(text = this.toString(), color = Color.Blue)
-                    Button(onClick = {
-                        navigationProvider.navigateToProfile()
-                    }) {
-                        Text(text = "next screen")
-                    }
+            chatsState.doOnLoading {
+                LoadingScreen()
+            }
+            chatsState.doOnFailure {
+                FailureScreen(message = it.message.orEmpty())
+            }
+            chatsState.onSuccess { chats ->
+                DefaultLayoutAppBar(title = "Chatingan") {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        content = {
+                            println("ASUUUUUU -> chat $chats")
+                            items(chats) { chat ->
+                                val contacts = chat.contacts.first { contact ->
+                                    val contactIdMe = Chatingan.getInstance()
+                                        .config
+                                        .contact
+                                        .id
 
-                    viewModel.contactState.composeStateOf(
-                        onLoading = {
-                            LoadingScreen()
-                        },
-                        onFailure = {
-                            FailureScreen(message = message.orEmpty())
-                        },
-                        onEmpty = {
-                            EmptyScreen()
-                        },
-                        onSuccess = {
-                            val idFirst = firstOrNull()?.id
-                            if (!idFirst.isNullOrEmpty()) {
-                                viewModel.token(idFirst)
+                                    contact.id != contactIdMe
+                                }
+
+                                val message = chat.chatInfo.lastMessage
+
+                                ChatScreen(
+                                    contact = contacts,
+                                    message = message,
+                                    onClick = {
+                                        Toast.makeText(context, "", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
                             }
-                            Text(text = "${this.map { it.name }}")
-                            viewModel.tokenState.composeStateOf {
-                                Text(text = "token is-> \n$this")
-                            }
-                        }
-                    )
+                        })
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChatScreen(
+    contact: Contact,
+    message: String,
+    onClick: (Contact) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .width(80.dp)
+            .clickableRipple {
+                onClick.invoke(contact)
+            }
+    ) {
+        ColumnCenter(
+            modifier = Modifier
+                .size(80.dp)
+                .padding(12.dp)
+        ) {
+            AsyncImage(
+                model = contact.image,
+                contentDescription = contact.name,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+            )
+        }
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Text(
+                text = contact.name,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = message,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Light
             )
         }
     }

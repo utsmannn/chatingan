@@ -13,6 +13,7 @@ import com.utsman.chatingan.di.AppModule
 import com.utsman.chatingan.home.HomeModule
 import com.utsman.chatingan.sdk.Chatingan
 import com.utsman.chatingan.sdk.data.config.ChatinganConfig
+import com.utsman.chatingan.sdk.data.entity.Contact
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
@@ -55,6 +56,7 @@ class AppApplication : Application() {
                     val chatinganConfig = ChatinganConfig.ChatinganConfigBuilder()
                         .setContact(contact = chatinganContact)
                         .setServerKey(serverKey = SERVER_KEY)
+                        .setFcmToken(fcmToken = authDataSources.firebaseToken())
                         .build()
 
                     println("--- SET CHATINGAN INSTANCE ---")

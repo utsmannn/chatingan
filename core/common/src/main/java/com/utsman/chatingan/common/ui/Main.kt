@@ -2,6 +2,7 @@ package com.utsman.chatingan.common.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.material.ripple.rememberRipple
@@ -13,8 +14,8 @@ import com.utsman.chatingan.common.ui.component.ColumnCenter
 
 
 @Composable
-fun LoadingScreen() {
-    ColumnCenter {
+fun LoadingScreen(modifier: Modifier = Modifier.fillMaxSize()) {
+    ColumnCenter(modifier = modifier) {
         CircularProgressIndicator()
     }
 }

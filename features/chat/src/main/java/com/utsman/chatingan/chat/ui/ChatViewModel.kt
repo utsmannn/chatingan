@@ -15,9 +15,12 @@ class ChatViewModel(
     private val repository: ChatRepository
 ) : RouteViewModel(ChatRoute.Chat) {
     val chatState = repository.chatState
-
     fun getChat(contact: Contact) = viewModelScope.launch {
         repository.getChat(contact)
+    }
+
+    fun readChat(contact: Contact) = viewModelScope.launch {
+        repository.readChat(contact)
     }
 
     fun sendMessage(receiverId: String, message: String) = viewModelScope.launch {

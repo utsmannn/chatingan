@@ -2,12 +2,14 @@ package com.utsman.chatingan.sdk.storage
 
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.event.defaultStateEvent
 import com.utsman.chatingan.common.event.map
+import com.utsman.chatingan.sdk.data.entity.Chat
 import com.utsman.chatingan.sdk.data.type.Entity
 import com.utsman.chatingan.sdk.data.type.Store
 import kotlinx.coroutines.flow.Flow
@@ -18,13 +20,9 @@ import java.util.*
 import kotlin.coroutines.resume
 
 abstract class Storage<T : Store, U : Entity> {
-    private val db: FirebaseFirestore by lazy {
+    private val firebaseFirestore: FirebaseFirestore by lazy {
         Firebase.firestore
     }
-
-    private val _addItemState = defaultStateEvent<U>()
-    private val _addItemInCollectionState = defaultStateEvent<U>()
-    private val _listState = defaultStateEvent<List<U>>()
 
     abstract fun path(): String
     abstract fun dateField(): String
@@ -32,34 +30,97 @@ abstract class Storage<T : Store, U : Entity> {
     abstract fun dataMapper(store: T): U
 
     private fun collection(): CollectionReference {
-        return db.collection(path())
+        return firebaseFirestore.collection(path())
     }
 
-    suspend fun addItem(item: T, id: String): FlowEvent<U> {
-        if (findItemStoreById(id) == null) {
+    fun addItem(item: T, id: String, additionalData: Any? = null, isMerge: Boolean = true): FlowEvent<U> {
+        println("ASUUUU => document add -> $id")
+        val addItemState = defaultStateEvent<U>()
+        if (id.isNotEmpty()) {
             collection()
                 .document(id)
-                .set(item)
+                .run {
+                    if (isMerge) {
+                        set(item, SetOptions.merge())
+                    } else {
+                        set(item)
+                    }
+                }
                 .addOnSuccessListener {
                     val data = dataMapper(item)
                     val successState = StateEvent.Success(data)
-                    _addItemState.value = successState
+                    addItemState.value = successState
+
+                    if (additionalData != null) {
+                        updateAdditionalData(additionalData)
+                    }
                 }
                 .addOnFailureListener {
                     val failureState = StateEvent.Failure<U>(it)
-                    _addItemState.value = failureState
+                    addItemState.value = failureState
+                }
+        } else {
+            addItemState.value = StateEvent.Empty()
+        }
+
+        return addItemState
+    }
+
+    fun <S>updateAdditionalData(additionalData: S): FlowEvent<S> {
+        val addAdditionalState = defaultStateEvent<S>()
+        if (additionalData != null) {
+            collection()
+                .parent
+                ?.set(additionalData, SetOptions.merge())
+                ?.addOnSuccessListener {
+                    val successState = StateEvent.Success<S>(additionalData)
+                    addAdditionalState.value = successState
+                }
+                ?.addOnFailureListener {
+                    val failureState = StateEvent.Failure<S>(it)
+                    addAdditionalState.value = failureState
                 }
         }
 
-        return _addItemState
+        return addAdditionalState
+    }
+
+    open fun <S : Any> listenAdditionalItem(mapper: (map: Map<String, Any>, date: Date) -> S): FlowEvent<S> {
+        val additionalState = defaultStateEvent<S>()
+        collection()
+            .parent
+            ?.addSnapshotListener { value, error ->
+                if (error != null) {
+                    val failureState = StateEvent.Failure<S>(error)
+                    additionalState.value = failureState
+                }
+
+                if (value != null) {
+                    val rawData = value.data
+                    val date = value.getDate(dateField())
+
+                    if (rawData != null && date != null) {
+                        val data = mapper.invoke(rawData, date)
+                        val successState = StateEvent.Success(data)
+                        additionalState.value = successState
+                    }
+                } else {
+                    val emptyState = StateEvent.Empty<S>()
+                    additionalState.value = emptyState
+                }
+            }
+
+        return additionalState
     }
 
     open fun listenItem(): FlowEvent<List<U>> {
+        val listState = defaultStateEvent<List<U>>()
         collection()
+            .orderBy(FIELD_LAST_UPDATE)
             .addSnapshotListener { value, error ->
                 if (error != null) {
                     val failureState = StateEvent.Failure<List<U>>(error)
-                    _listState.value = failureState
+                    listState.value = failureState
                 }
 
                 if (value != null) {
@@ -74,14 +135,14 @@ abstract class Storage<T : Store, U : Entity> {
                         .map { dataMapper(it) }
 
                     val successState = StateEvent.Success(contacts)
-                    _listState.value = successState
+                    listState.value = successState
                 } else {
                     val emptyState = StateEvent.Empty<List<U>>()
-                    _listState.value = emptyState
+                    listState.value = emptyState
                 }
             }
 
-        return _listState
+        return listState
     }
 
     suspend fun findItemStoreById(id: String): T? {
@@ -134,5 +195,9 @@ abstract class Storage<T : Store, U : Entity> {
             }
         }
         return store
+    }
+
+    companion object {
+        internal const val FIELD_LAST_UPDATE = "lastUpdate"
     }
 }
