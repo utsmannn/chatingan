@@ -1,17 +1,15 @@
 package com.utsman.chatingan.sdk.storage
 
-import com.utsman.chatingan.sdk.data.entity.Chat
-import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
 import com.utsman.chatingan.sdk.data.store.MessageChatStore
 import java.util.*
 
 class MessageChatStorage(
-    private val contacts: List<Contact>
+    val id: String
 ) : Storage<MessageChatStore, MessageChat>() {
 
     override fun path(): String {
-        return "chats" + "/" + Chat.generateId(contacts) + "/messages"
+        return "chats/$id/messages"
     }
 
     override fun mapStoreTransform(map: Map<String, Any>, date: Date): MessageChatStore {

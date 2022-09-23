@@ -17,9 +17,9 @@ class AppFirebaseService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        println("ASUUU new token fcm ---")
+        println("new token fcm ---")
         println(token)
-        println("ASUUU new token fcm --- end ")
+        println("new token fcm --- end ")
         IOScope().launch {
             Chatingan.getInstance().updateFcm(token)
         }

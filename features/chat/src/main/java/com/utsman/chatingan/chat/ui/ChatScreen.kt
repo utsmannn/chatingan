@@ -51,10 +51,15 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.event.composeStateOf
+import com.utsman.chatingan.common.event.doOnEmpty
+import com.utsman.chatingan.common.event.doOnFailure
+import com.utsman.chatingan.common.event.doOnIdle
 import com.utsman.chatingan.common.event.doOnLoading
 import com.utsman.chatingan.common.event.doOnSuccess
+import com.utsman.chatingan.common.ui.EmptyScreen
 import com.utsman.chatingan.common.ui.LoadingScreen
 import com.utsman.chatingan.navigation.NavigationProvider
+import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
 import kotlinx.coroutines.launch
@@ -68,7 +73,7 @@ fun ChatScreen(
     navigationProvider: NavigationProvider = get(),
     viewModel: ChatViewModel = getViewModel()
 ) {
-    println("ASUUUUUUUU contact nya nih-> $contact")
+    var chatInfo: ChatInfo? = remember { null }
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
     val data by viewModel.chatState.collectAsState()
@@ -89,6 +94,8 @@ fun ChatScreen(
             Column {
                 data
                     .doOnSuccess {
+                        chatInfo = it.chatInfo
+
                         scope.launch {
                             scrollState.scrollToItem(it.messages.size)
                         }
@@ -101,12 +108,20 @@ fun ChatScreen(
                                 }
                             })
                     }.doOnLoading {
-                        LoadingScreen(modifier = Modifier.weight(10f))
+                        LoadingScreen(modifier = Modifier.weight(10f).fillMaxWidth())
+                    }.doOnFailure {
+                        Text(text = it.message.orEmpty())
+                    }.apply {
+                        println("ASUUUUUU -> chat $this")
+                    }.doOnEmpty {
+                        Column(modifier = Modifier.weight(10f)) {
+                            EmptyScreen()
+                        }
                     }
 
                 BottomBarChat(
                     onSend = {
-                        viewModel.sendMessage(contact.id, it)
+                        viewModel.sendMessage(contact, it, chatInfo)
                     }
                 )
             }

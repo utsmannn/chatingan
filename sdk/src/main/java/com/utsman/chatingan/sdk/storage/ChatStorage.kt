@@ -8,6 +8,7 @@ import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.event.defaultStateEvent
 import com.utsman.chatingan.common.event.invoke
+import com.utsman.chatingan.common.event.loadingStateEvent
 import com.utsman.chatingan.common.event.map
 import com.utsman.chatingan.sdk.data.config.ChatinganConfig
 import com.utsman.chatingan.sdk.data.entity.Chat
@@ -32,9 +33,7 @@ class ChatStorage(
     suspend fun getChatList(): FlowEvent<List<Chat>> {
         return getPaths()
             .map { state ->
-                println("ASUUUU path state -> $state")
                 state.map { list ->
-                    println("ASUUUU -> list anu $list")
                     list.filter { it.isNotEmpty() }.mapNotNull {
                         getInfo(it)
                     }
@@ -50,7 +49,6 @@ class ChatStorage(
                 .get()
                 .addOnSuccessListener { value ->
                     val data = value?.data
-                    println("ASUUUUUUUUUU -> data found -> $data")
 
                     if (data != null) {
                         IOScope().launch {
@@ -60,7 +58,6 @@ class ChatStorage(
                             val chatInfo = ChatInfo(
                                 lastMessage = data["lastMessage"].toString()
                             )
-                            println("ASUUUUU => contact di mari -> $contacts")
                             val chat = Chat(
                                 id = path,
                                 contacts = contacts,
@@ -79,7 +76,7 @@ class ChatStorage(
     }
 
     private fun getPaths(): FlowEvent<List<String>> {
-        val pathState = defaultStateEvent<List<String>>()
+        val pathState = loadingStateEvent<List<String>>()
         firebaseFirestore
             .collection(COLLECTION_PATH)
             .addSnapshotListener { value, error ->
@@ -89,16 +86,8 @@ class ChatStorage(
                     val paths = value?.documents?.map {
                         it.id
                     }.orEmpty()
-                        .filter { it.split("_").count() == 2 }
-
-                    println("ASUUUUU -> path $paths")
-                    println("ASUUUUU -> path count ${paths.count()}")
 
                     if (paths.isNotEmpty()) {
-                        println("ASUUUUU -> paths")
-                        println(paths.toString())
-                        println("ASUUUUU -> paths")
-
                         pathState.value = StateEvent.Success(paths)
                     } else {
                         pathState.value = StateEvent.Empty()

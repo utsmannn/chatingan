@@ -1,11 +1,15 @@
 package com.utsman.chatingan.chat.repository
 
 import com.utsman.chatingan.common.event.FlowEvent
+import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.event.defaultStateEvent
+import com.utsman.chatingan.common.event.loadingEventValue
 import com.utsman.chatingan.sdk.Chatingan
 import com.utsman.chatingan.sdk.data.entity.Chat
+import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
+import kotlinx.coroutines.flow.onEach
 
 class ChatRepositoryImpl : ChatRepository {
 
@@ -18,18 +22,10 @@ class ChatRepositoryImpl : ChatRepository {
         get() = _message
 
     override suspend fun getChat(contact: Contact) {
-        val chatingan = Chatingan.getInstance()
-        val contactMe = chatingan.config.contact
-        val contacts = listOf(contactMe, contact)
-
+        _chatState.value = loadingEventValue()
         Chatingan.getInstance()
-            .getChat(contacts)
+            .getChat(contact)
             .collect(_chatState)
-            /*.collect {
-                if (it.invoke() != _chatState.value.invoke()) {
-                    _chatState.value = it
-                }
-            }*/
     }
 
     override suspend fun readChat(contact: Contact) {
@@ -41,14 +37,11 @@ class ChatRepositoryImpl : ChatRepository {
             .markChatRead(contacts)
     }
 
-    override suspend fun sendMessage(receiverId: String, message: String) {
+    override suspend fun sendMessage(contact: Contact, message: String, chatInfo: ChatInfo?) {
+        _message.value = loadingEventValue()
         val chatingan = Chatingan.getInstance()
         val senderId = chatingan.config.contact.id
-        val messageChat = chatingan.createMessageChat(senderId, receiverId, message)
-        chatingan.sendMessage(messageChat).collect(_message)
-    }
-
-    override suspend fun sendMessage(contact: Contact, message: String) {
-
+        val messageChat = chatingan.createMessageChat(senderId, contact.id, message)
+        chatingan.sendMessage(contact, messageChat, chatInfo).collect(_message)
     }
 }

@@ -5,6 +5,7 @@ import com.utsman.chatingan.chat.repository.ChatRepository
 import com.utsman.chatingan.chat.routes.ChatRoute
 import com.utsman.chatingan.common.koin.KoinInjector
 import com.utsman.chatingan.navigation.RouteViewModel
+import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -23,8 +24,8 @@ class ChatViewModel(
         repository.readChat(contact)
     }
 
-    fun sendMessage(receiverId: String, message: String) = viewModelScope.launch {
-        repository.sendMessage(receiverId, message)
+    fun sendMessage(contact: Contact, message: String, chatInfo: ChatInfo?) = viewModelScope.launch {
+        repository.sendMessage(contact, message, chatInfo)
     }
 
     companion object : KoinInjector {

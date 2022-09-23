@@ -5,6 +5,7 @@ import com.utsman.chatingan.auth.datasources.AuthDataSources
 import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.event.defaultStateEvent
 import com.utsman.chatingan.common.event.filterFlow
+import com.utsman.chatingan.common.event.loadingEventValue
 import com.utsman.chatingan.common.event.onSuccess
 import com.utsman.chatingan.sdk.Chatingan
 import com.utsman.chatingan.sdk.data.entity.Chat
@@ -39,7 +40,6 @@ class HomeRepositoryImpl(
                     image = user.photoUrl
                 )
 
-                println("ASUUUU try add contact")
                 Chatingan
                     .getInstance()
                     .addMeContact(contact)
@@ -49,6 +49,7 @@ class HomeRepositoryImpl(
     }
 
     override suspend fun getContacts() {
+        _contactState.value = loadingEventValue()
         Chatingan
             .getInstance()
             .contacts().collect(_contactState)
@@ -61,7 +62,7 @@ class HomeRepositoryImpl(
     }
 
     override suspend fun getChats() {
-        println("ASUUUU -> get chats.....")
+        _chatsState.value = loadingEventValue()
         Chatingan
             .getInstance()
             .getChats()

@@ -15,8 +15,7 @@ interface Chatingan {
     suspend fun updateFcm(fcmToken: String): FlowEvent<String>
     suspend fun addMeContact(contact: Contact): FlowEvent<Contact>
     suspend fun contacts(): FlowEvent<List<Contact>>
-    suspend fun sendMessage(messageChat: MessageChat): FlowEvent<MessageChat>
-    suspend fun sendMessage(contact: Contact, messageChat: MessageChat): FlowEvent<MessageChat>
+    suspend fun sendMessage(contact: Contact, messageChat: MessageChat, chatInfo: ChatInfo?): FlowEvent<MessageChat>
 
     suspend fun createMessageChat(
         senderId: String,
@@ -25,16 +24,13 @@ interface Chatingan {
     ): MessageChat
 
     suspend fun getMessages(contact: Contact): FlowEvent<List<MessageChat>>
+    suspend fun getChat(contact: Contact): FlowEvent<Chat>
     suspend fun getChatInfos(contact: Contact): FlowEvent<List<ChatInfo>>
     suspend fun getChatInfo(contact: Contact): FlowEvent<ChatInfo>
 
     suspend fun getChats(): FlowEvent<List<Chat>>
-    suspend fun getChat(contacts: List<Contact>): FlowEvent<Chat>
     suspend fun markChatRead(contacts: List<Contact>): FlowEvent<ChatInfo>
     suspend fun tokenForId(id: String): FlowEvent<String>
-
-    suspend fun getMessageStorage(contacts: List<Contact>): FlowEvent<MessageChatStorage>
-    suspend fun getMessageStorage(messageChat: MessageChat): FlowEvent<MessageChatStorage>
 
     companion object {
         @Volatile

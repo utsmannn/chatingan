@@ -8,6 +8,7 @@ import com.google.firebase.ktx.Firebase
 import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.event.defaultStateEvent
+import com.utsman.chatingan.common.event.loadingStateEvent
 import com.utsman.chatingan.common.event.map
 import com.utsman.chatingan.sdk.data.entity.Chat
 import com.utsman.chatingan.sdk.data.type.Entity
@@ -25,7 +26,6 @@ abstract class Storage<T : Store, U : Entity> {
     }
 
     abstract fun path(): String
-    abstract fun dateField(): String
     abstract fun mapStoreTransform(map: Map<String, Any>, date: Date): T
     abstract fun dataMapper(store: T): U
 
@@ -33,9 +33,12 @@ abstract class Storage<T : Store, U : Entity> {
         return firebaseFirestore.collection(path())
     }
 
+    open fun dateField(): String {
+        return FIELD_LAST_UPDATE
+    }
+
     fun addItem(item: T, id: String, additionalData: Any? = null, isMerge: Boolean = true): FlowEvent<U> {
-        println("ASUUUU => document add -> $id")
-        val addItemState = defaultStateEvent<U>()
+        val addItemState = loadingStateEvent<U>()
         if (id.isNotEmpty()) {
             collection()
                 .document(id)
@@ -86,7 +89,7 @@ abstract class Storage<T : Store, U : Entity> {
     }
 
     open fun <S : Any> listenAdditionalItem(mapper: (map: Map<String, Any>, date: Date) -> S): FlowEvent<S> {
-        val additionalState = defaultStateEvent<S>()
+        val additionalState = loadingStateEvent<S>()
         collection()
             .parent
             ?.addSnapshotListener { value, error ->
@@ -114,7 +117,7 @@ abstract class Storage<T : Store, U : Entity> {
     }
 
     open fun listenItem(): FlowEvent<List<U>> {
-        val listState = defaultStateEvent<List<U>>()
+        val listState = loadingStateEvent<List<U>>()
         collection()
             .orderBy(FIELD_LAST_UPDATE)
             .addSnapshotListener { value, error ->
@@ -145,7 +148,7 @@ abstract class Storage<T : Store, U : Entity> {
         return listState
     }
 
-    suspend fun findItemStoreById(id: String): T? {
+    private suspend fun findItemStoreById(id: String): T? {
         return suspendCancellableCoroutine { task ->
             collection()
                 .document(id)
@@ -159,9 +162,6 @@ abstract class Storage<T : Store, U : Entity> {
                     } else {
                         task.resume(null)
                     }
-                }
-                .addOnFailureListener {
-                    task.resume(null)
                 }
                 .addOnFailureListener {
                     task.resume(null)

@@ -17,6 +17,15 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 fun <T> defaultStateEvent(): MutableStateFlow<StateEvent<T>> = MutableStateFlow(StateEvent.Idle())
+fun <T> loadingStateEvent(): MutableStateFlow<StateEvent<T>> = MutableStateFlow(StateEvent.Loading())
+fun <T> emptyStateEvent(): MutableStateFlow<StateEvent<T>> = MutableStateFlow(StateEvent.Empty())
+fun <T> errorStateEvent(message: String?): MutableStateFlow<StateEvent<T>> = MutableStateFlow(
+    StateEvent.Failure(
+        Throwable(message)
+    )
+)
+
+fun <T>loadingEventValue() = StateEvent.Loading<T>()
 
 inline fun <T, U> StateEvent<T>.map(mapper: (T) -> U): StateEvent<U> {
     return when (this) {
@@ -163,6 +172,13 @@ inline fun <reified T> StateEvent<T>.doOnSuccess(data: (T) -> Unit): StateEvent<
 inline fun <reified T> StateEvent<T>.doOnFailure(failure: (Throwable) -> Unit): StateEvent<T> {
     if (this is StateEvent.Failure) {
         failure.invoke(this.exception)
+    }
+    return this
+}
+
+inline fun <reified T> StateEvent<T>.doOnEmpty(failure: () -> Unit): StateEvent<T> {
+    if (this is StateEvent.Empty) {
+        failure.invoke()
     }
     return this
 }

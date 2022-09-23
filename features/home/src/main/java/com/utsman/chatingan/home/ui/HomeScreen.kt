@@ -80,7 +80,6 @@ fun HomeScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         content = {
-                            println("ASUUUUUU -> chat $chats")
                             items(chats) { chat ->
                                 val contacts = chat.contacts.first { contact ->
                                     val contactIdMe = Chatingan.getInstance()
