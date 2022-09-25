@@ -5,10 +5,9 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.MessageChat
-import com.utsman.chatingan.sdk.data.type.Store
+import com.utsman.chatingan.sdk.data.contract.Store
 import java.time.Instant
 import java.util.*
-import kotlin.collections.ArrayList
 
 class ChatInfoStore(
     var id: String = "",

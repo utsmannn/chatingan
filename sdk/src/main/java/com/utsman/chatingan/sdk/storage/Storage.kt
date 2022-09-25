@@ -1,7 +1,6 @@
 package com.utsman.chatingan.sdk.storage
 
 import com.google.firebase.firestore.CollectionReference
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
@@ -11,9 +10,8 @@ import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.event.defaultStateEvent
 import com.utsman.chatingan.common.event.loadingStateEvent
 import com.utsman.chatingan.common.event.map
-import com.utsman.chatingan.sdk.data.entity.Chat
-import com.utsman.chatingan.sdk.data.type.Entity
-import com.utsman.chatingan.sdk.data.type.Store
+import com.utsman.chatingan.sdk.data.contract.Entity
+import com.utsman.chatingan.sdk.data.contract.Store
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map

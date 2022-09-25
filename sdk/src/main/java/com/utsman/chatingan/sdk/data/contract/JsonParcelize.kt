@@ -1,4 +1,4 @@
-package com.utsman.chatingan.sdk.data.type
+package com.utsman.chatingan.sdk.data.contract
 
 import android.net.Uri
 import com.google.gson.Gson

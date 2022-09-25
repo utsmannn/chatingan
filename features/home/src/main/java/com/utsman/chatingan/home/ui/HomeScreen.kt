@@ -31,6 +31,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.constraintlayout.compose.Visibility
 import coil.compose.AsyncImage
+import com.utsman.chatingan.common.event.defaultCompose
 import com.utsman.chatingan.common.event.doOnEmpty
 import com.utsman.chatingan.common.event.doOnFailure
 import com.utsman.chatingan.common.event.doOnLoading
@@ -75,31 +76,22 @@ fun HomeScreen(
         }
     ) {
         DefaultLayoutAppBar(title = "Chatingan") {
-
-            chatsState.doOnLoading {
-                LoadingScreen()
-            }
-            chatsState.doOnEmpty {
-                EmptyScreen()
-            }
-            chatsState.doOnFailure {
-                FailureScreen(message = it.message.orEmpty())
-            }
-            chatsState.onSuccess { chats ->
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    content = {
-                        items(chats) { chat ->
-                            ChatScreen(
-                                contact = chat.contact,
-                                chatInfo = chat.chatInfo,
-                                onClick = {
-                                    navigationProvider.navigateToChat(chat.contact)
-                                }
-                            )
-                        }
-                    })
-            }
+            chatsState.defaultCompose()
+                .onSuccess { chats ->
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        content = {
+                            items(chats) { chat ->
+                                ChatScreen(
+                                    contact = chat.contact,
+                                    chatInfo = chat.chatInfo,
+                                    onClick = {
+                                        navigationProvider.navigateToChat(chat.contact)
+                                    }
+                                )
+                            }
+                        })
+                }
         }
     }
 }

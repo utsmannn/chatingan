@@ -10,7 +10,7 @@ import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.navigation.NavigationRouteModule
 import com.utsman.chatingan.navigation.Route
 import com.utsman.chatingan.sdk.data.entity.Contact
-import com.utsman.chatingan.sdk.data.type.JsonParcelize
+import com.utsman.chatingan.sdk.data.contract.JsonParcelize
 
 object ChatRoute : NavigationRouteModule {
     //val ChatArg = Chat(NavigationProvider.NavArg.CONTACT_ARG)

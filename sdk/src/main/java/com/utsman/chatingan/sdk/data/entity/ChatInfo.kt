@@ -3,10 +3,9 @@ package com.utsman.chatingan.sdk.data.entity
 import android.net.Uri
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.utsman.chatingan.sdk.Chatingan
 import com.utsman.chatingan.sdk.data.store.ChatInfoStore
-import com.utsman.chatingan.sdk.data.type.Entity
-import com.utsman.chatingan.sdk.data.type.JsonParcelize
+import com.utsman.chatingan.sdk.data.contract.Entity
+import com.utsman.chatingan.sdk.data.contract.JsonParcelize
 import java.time.Instant
 import java.util.*
 

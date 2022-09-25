@@ -48,6 +48,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import coil.compose.AsyncImage
 import com.utsman.chatingan.common.event.doOnEmpty
 import com.utsman.chatingan.common.event.doOnFailure
@@ -107,9 +109,11 @@ fun ChatScreen(
                                 }
                             })
                     }.doOnLoading {
-                        LoadingScreen(modifier = Modifier
-                            .weight(10f)
-                            .fillMaxWidth())
+                        LoadingScreen(
+                            modifier = Modifier
+                                .weight(10f)
+                                .fillMaxWidth()
+                        )
                     }.doOnFailure {
                         Text(text = it.message.orEmpty())
                     }.doOnEmpty {
@@ -201,31 +205,48 @@ fun BottomBarChat(
 
 @Composable
 fun MessageItem(messageChat: MessageChat, contact: Contact) {
-    Box(
+    val isFromMe = messageChat.senderId != contact.id
+
+    ConstraintLayout(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 10.dp, vertical = 6.dp)
             .safeContentPadding()
     ) {
-        val containerModifier = if (messageChat.senderId == contact.id) {
+        val (boxSender, boxReceiver, messageBoxSender, messageBoxReceiver) = createRefs()
+        val gh1 = createGuidelineFromStart(0.3f)
+        val gh2 = createGuidelineFromEnd(0.3f)
+
+        val containerModifier = if (isFromMe) {
             Modifier
-                .align(Alignment.TopStart)
-                .background(Color.Magenta, shape = RoundedCornerShape(10))
+                .constrainAs(boxSender) {
+                    start.linkTo(gh1)
+                    end.linkTo(parent.end)
+                    width = Dimension.fillToConstraints
+                }
+                .wrapContentSize(align = Alignment.TopEnd)
+
         } else {
             Modifier
-                .align(Alignment.TopEnd)
-                .background(Color.Gray, shape = RoundedCornerShape(10))
+                .constrainAs(boxReceiver) {
+                    start.linkTo(parent.start)
+                    end.linkTo(gh2)
+                    width = Dimension.fillToConstraints
+                }
+                .wrapContentSize(align = Alignment.TopStart)
         }
 
-        val messageModifier = if (messageChat.senderId == contact.id) {
+        val messageModifier = if (isFromMe) {
             Modifier
-                .widthIn(max = 250.dp)
-                .wrapContentSize(align = Alignment.TopStart)
+                .constrainAs(messageBoxSender) {
+                    end.linkTo(parent.end)
+                }
                 .background(Color.Magenta, shape = RoundedCornerShape(10))
         } else {
             Modifier
-                .widthIn(max = 250.dp)
-                .wrapContentSize(align = Alignment.TopEnd)
+                .constrainAs(messageBoxReceiver) {
+                    start.linkTo(parent.start)
+                }
                 .background(Color.Gray, shape = RoundedCornerShape(10))
         }
 
@@ -235,7 +256,7 @@ fun MessageItem(messageChat: MessageChat, contact: Contact) {
             Column(
                 modifier = messageModifier
             ) {
-                Text(text = messageChat.messageBody, modifier = Modifier.padding(12.dp))
+                Text(text = messageChat.messageBody, modifier = Modifier.padding(10.dp))
             }
         }
     }

@@ -1,12 +1,10 @@
 package com.utsman.chatingan.sdk.data.entity
 
 import android.net.Uri
-import android.os.Parcelable
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.utsman.chatingan.sdk.data.store.MessageChatStore
-import com.utsman.chatingan.sdk.data.type.Entity
-import kotlinx.parcelize.Parcelize
+import com.utsman.chatingan.sdk.data.contract.Entity
 import java.time.Instant
 import java.util.*
 
