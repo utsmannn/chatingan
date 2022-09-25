@@ -18,8 +18,6 @@ interface HomeRepository {
 
     suspend fun getUser()
     suspend fun getContacts()
-    suspend fun getTokenId(id: String)
-
     suspend fun getChats()
 
     /* Single one shoot */

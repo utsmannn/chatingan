@@ -106,7 +106,7 @@ fun SplashScreen(
                     .build()
 
                 println("--- SET CHATINGAN INSTANCE ---")
-                Chatingan.getInstance().initializeApp(chatinganConfig)
+                Chatingan.initialize(chatinganConfig)
                 navigationProvider.screenOf(
                     routeViewModel = mainViewModel,
                     destination = HomeRoute.Home

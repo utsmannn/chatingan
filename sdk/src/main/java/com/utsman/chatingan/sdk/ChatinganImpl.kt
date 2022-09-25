@@ -34,32 +34,31 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.*
 
+@OptIn(FlowPreview::class)
 internal class ChatinganImpl(
-    private val contactStorage: ContactStorage
+    private var _config: ChatinganConfig?
 ) : Chatingan {
 
-    @Volatile
-    private var configInstance: ChatinganConfig = ChatinganConfig()
-
-    override fun initializeApp(config: ChatinganConfig) {
-        this.configInstance = config
-
+    init {
         IOScope().launch {
             addMeContact(config.contact)
         }
     }
 
-    private val firebaseServices: FirebaseServices
-        get() = FirebaseServices.instance(configInstance)
-
     override val config: ChatinganConfig
-        get() = configInstance
+        get() = _config ?: throw IllegalStateException("Chatingan not initialized!")
+
+    private val firebaseServices: FirebaseServices
+        get() = FirebaseServices.instance(config)
+
+    private val contactStorage: ContactStorage
+        get() = ContactStorage()
 
     private val chatInfoStorage: ChatInfoStorage
         get() = ChatInfoStorage()
 
     private val chatInfoIdFinder: ChatInfoStorage.IdFinder
-        get() = ChatInfoStorage.IdFinder(configInstance)
+        get() = ChatInfoStorage.IdFinder(config)
 
     override suspend fun updateFcm(fcmToken: String): FlowEvent<String> {
         val currentContact = config.contact
@@ -85,7 +84,6 @@ internal class ChatinganImpl(
         return contactStorage.listenItem().filterFlow { it.id != config.contact.id }
     }
 
-    @OptIn(FlowPreview::class)
     override suspend fun sendMessage(
         contact: Contact,
         messageChat: MessageChat,
@@ -145,10 +143,9 @@ internal class ChatinganImpl(
     override suspend fun getMessages(contact: Contact): FlowEvent<List<MessageChat>> {
         val pathId = chatInfoIdFinder.getForContact(contact) ?: return emptyStateEvent()
         val messageChatStorage = MessageChatStorage(pathId)
-        return messageChatStorage.listenItem()
+        return messageChatStorage.listenItem().debounce(500).stateIn(IOScope())
     }
 
-    @OptIn(FlowPreview::class)
     override suspend fun getChat(contact: Contact): FlowEvent<Chat> {
         var chatInfo = ChatInfo()
         return chatInfoIdFinder.listenForContact(contact)
@@ -210,14 +207,12 @@ internal class ChatinganImpl(
                             val member = info.memberIds
                                 .find { it != config.contact.id } ?: return@map null
                             val contact = contactStorage.findItemById(member) ?: return@map null
-
-                            val chat = Chat(
+                            Chat(
                                 id = info.id,
                                 contact = contact,
                                 messages = emptyList(),
                                 chatInfo = info
                             )
-                            chat
 
                         }
                         .filterNotNull()
@@ -234,6 +229,7 @@ internal class ChatinganImpl(
                     it
                 }
             }
+            .debounce(500)
             .stateIn(IOScope())
     }
 
@@ -250,14 +246,7 @@ internal class ChatinganImpl(
             currentChatInfo.readByIds = newLastReadIds.sorted()
             chatInfoStorage.addItem(currentChatInfo.toStore(), pathId, isMerge = true)
         } else {
-            errorStateEvent("Empty Chat Info")
-        }
-    }
-
-
-    override suspend fun tokenForId(id: String): FlowEvent<String> {
-        return contactStorage.findItemStoreByIdFlow(id).map {
-            it.map { data -> data.token }
-        }.stateIn(IOScope())
+            errorStateEvent("Chat Info is Empty")
+        }.debounce(500).stateIn(IOScope())
     }
 }

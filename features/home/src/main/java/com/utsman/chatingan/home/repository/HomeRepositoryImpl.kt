@@ -49,12 +49,6 @@ class HomeRepositoryImpl(
             .getContacts().collect(_contactState)
     }
 
-    override suspend fun getTokenId(id: String) {
-        Chatingan
-            .getInstance()
-            .tokenForId(id).collect(_tokenState)
-    }
-
     override suspend fun getChats() {
         _chatsState.value = loadingEventValue()
         Chatingan

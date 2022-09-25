@@ -11,7 +11,6 @@ import com.utsman.chatingan.sdk.storage.ContactStorage
 
 interface Chatingan {
     val config: ChatinganConfig
-    fun initializeApp(config: ChatinganConfig)
 
     suspend fun updateFcm(fcmToken: String): FlowEvent<String>
     suspend fun addMeContact(contact: Contact): FlowEvent<Contact>
@@ -32,19 +31,23 @@ interface Chatingan {
 
     suspend fun getChats(): FlowEvent<List<Chat>>
     suspend fun markChatRead(contact: Contact, messageId: String): FlowEvent<ChatInfo>
-    suspend fun tokenForId(id: String): FlowEvent<String>
 
     companion object {
         @Volatile
         private var instance: Chatingan? = null
 
+        @Volatile
+        private var config: ChatinganConfig? = null
+
+        @JvmStatic
+        fun initialize(config: ChatinganConfig) {
+            this.config = config
+        }
+
         @JvmStatic
         fun getInstance(): Chatingan =
             instance ?: synchronized(this) {
-                val contactStorage = ContactStorage()
-                instance ?: ChatinganImpl(
-                    contactStorage = contactStorage
-                ).also { instance = it }
+                instance ?: ChatinganImpl(config).also { instance = it }
             }
     }
 }
