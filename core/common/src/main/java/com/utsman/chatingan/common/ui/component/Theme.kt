@@ -1,10 +1,11 @@
-package com.utsman.chatingan.common.ui
+package com.utsman.chatingan.common.ui.component
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
+import com.utsman.chatingan.common.ui.Typography
 
 private val DarkColorPalette = darkColors(
     primary = Purple200,

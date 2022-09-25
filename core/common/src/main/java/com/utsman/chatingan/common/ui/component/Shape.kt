@@ -1,4 +1,4 @@
-package com.utsman.chatingan.common.ui
+package com.utsman.chatingan.common.ui.component
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Shapes

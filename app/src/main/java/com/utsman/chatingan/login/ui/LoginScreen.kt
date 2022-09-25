@@ -8,8 +8,8 @@ import com.utsman.chatingan.common.R
 import com.utsman.chatingan.common.event.defaultCompose
 import com.utsman.chatingan.common.event.doOnIdle
 import com.utsman.chatingan.common.event.doOnSuccess
-import com.utsman.chatingan.common.ui.ButtonColorsWhite
-import com.utsman.chatingan.common.ui.ButtonImage
+import com.utsman.chatingan.common.ui.component.ButtonColorsWhite
+import com.utsman.chatingan.common.ui.component.ButtonImage
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.routes.AppRoute
