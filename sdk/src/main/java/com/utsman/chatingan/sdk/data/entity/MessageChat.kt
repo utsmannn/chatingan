@@ -13,6 +13,7 @@ data class MessageChat(
     var senderId: String = "",
     var receiverId: String = "",
     var messageBody: String = "",
+    var type: Type = Type.MESSAGE,
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Entity {
     override fun toJson(): String {
@@ -28,5 +29,9 @@ data class MessageChat(
         return MessageChatStore(
             id, senderId, receiverId, messageBody, lastUpdate
         )
+    }
+
+    enum class Type {
+        MESSAGE, DIVIDER
     }
 }

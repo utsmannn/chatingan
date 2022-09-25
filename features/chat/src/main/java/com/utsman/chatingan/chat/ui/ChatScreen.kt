@@ -2,9 +2,9 @@ package com.utsman.chatingan.chat.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,15 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Icon
@@ -45,22 +43,30 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import androidx.constraintlayout.compose.Visibility
 import coil.compose.AsyncImage
+import com.utsman.chatingan.common.event.defaultCompose
 import com.utsman.chatingan.common.event.doOnEmpty
 import com.utsman.chatingan.common.event.doOnFailure
 import com.utsman.chatingan.common.event.doOnLoading
 import com.utsman.chatingan.common.event.doOnSuccess
 import com.utsman.chatingan.common.ui.EmptyScreen
 import com.utsman.chatingan.common.ui.LoadingScreen
+import com.utsman.chatingan.common.ui.component.Gray50
+import com.utsman.chatingan.common.ui.component.IconResChatDone
+import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
 import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
+import com.utsman.chatingan.sdk.utils.DateUtils
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
@@ -74,7 +80,7 @@ fun ChatScreen(
     var chatInfo: ChatInfo? = remember { null }
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
-    val data by viewModel.chatState.collectAsState()
+    val chatState by viewModel.chatState.collectAsState()
 
     viewModel.getChat(contact)
 
@@ -89,7 +95,7 @@ fun ChatScreen(
         },
         content = {
             Column {
-                data
+                chatState.defaultCompose()
                     .doOnSuccess {
                         chatInfo = it.chatInfo
 
@@ -101,11 +107,15 @@ fun ChatScreen(
                             state = scrollState,
                             content = {
                                 itemsIndexed(it.messages) { index, item ->
-                                    val isLastIndex = index == it.messages.lastIndex
-                                    if (isLastIndex) {
-                                        viewModel.readChat(contact, item.id)
+                                    if (item.type == MessageChat.Type.DIVIDER) {
+                                        DividerScreen(messageChat = item)
+                                    } else {
+                                        val isLastIndex = index == it.messages.lastIndex
+                                        if (isLastIndex) {
+                                            viewModel.readChat(contact, item.id)
+                                        }
+                                        MessageItem(messageChat = item, contact = contact, chatInfo = it.chatInfo)
                                     }
-                                    MessageItem(messageChat = item, contact = contact)
                                 }
                             })
                     }.doOnLoading {
@@ -204,7 +214,11 @@ fun BottomBarChat(
 }
 
 @Composable
-fun MessageItem(messageChat: MessageChat, contact: Contact) {
+fun MessageItem(
+    messageChat: MessageChat,
+    contact: Contact,
+    chatInfo: ChatInfo
+) {
     val isFromMe = messageChat.senderId != contact.id
 
     ConstraintLayout(
@@ -242,6 +256,7 @@ fun MessageItem(messageChat: MessageChat, contact: Contact) {
                     end.linkTo(parent.end)
                 }
                 .background(Color.Magenta, shape = RoundedCornerShape(10))
+
         } else {
             Modifier
                 .constrainAs(messageBoxReceiver) {
@@ -253,12 +268,127 @@ fun MessageItem(messageChat: MessageChat, contact: Contact) {
         Column(
             modifier = containerModifier
         ) {
-            Column(
+            ConstraintLayout(
                 modifier = messageModifier
             ) {
-                Text(text = messageChat.messageBody, modifier = Modifier.padding(10.dp))
+                val (messageText, indicatorRow, indicatorDate) = createRefs()
+                Row(
+                    modifier = Modifier
+                        .constrainAs(indicatorRow) {
+                            alpha = 0.7f
+                            end.linkTo(parent.end)
+                            bottom.linkTo(parent.bottom)
+                        }
+                        .widthIn(min = 60.dp)
+                        .padding(end = 6.dp, bottom = 6.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = DateUtils.toReadable(messageChat.lastUpdate),
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.End
+                    )
+
+                    if (isFromMe) {
+                        val isLastMessage = chatInfo.lastMessage.id == messageChat.id
+                        val iconReadPainter = if (!chatInfo.isReadFromReceiver(contact) && isLastMessage) {
+                            IconResChatDone()
+                        } else {
+                            IconResChatDoneAll()
+                        }
+
+                        val sizeVisibility = if (chatInfo.isFromMe(contact)) {
+                            16.dp
+                        } else {
+                            0.dp
+                        }
+
+                        Icon(
+                            painter = iconReadPainter,
+                            contentDescription = "",
+                            modifier = Modifier
+                                .size(sizeVisibility)
+                                .padding(start = 3.dp)
+                        )
+                    }
+                }
+
+                /*val iconReadPainter = if (chatInfo.isReadFromReceiver(contact)) {
+                    IconResChatDoneAll()
+                } else {
+                    IconResChatDone()
+                }
+
+                val iconReadVisibility = if (chatInfo.isFromMe(contact)) {
+                    Visibility.Visible
+                } else {
+                    Visibility.Gone
+                }
+
+                Icon(
+                    painter = iconReadPainter,
+                    contentDescription = "",
+                    modifier = Modifier
+                        .constrainAs(indicatorRead) {
+                            end.linkTo(parent.end)
+                            top.linkTo(indicatorDate.top)
+                            bottom.linkTo(indicatorDate.bottom)
+                            visibility = iconReadVisibility
+                        }
+                        .aspectRatio(1f / 1f)
+                        .padding(end = 6.dp, bottom = 6.dp)
+                )
+
+                Text(
+                    text = DateUtils.toReadable(messageChat.lastUpdate),
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .constrainAs(indicatorDate) {
+                            alpha = 0.7f
+                            end.linkTo(indicatorRead.start)
+                            bottom.linkTo(parent.bottom)
+                        }
+                        .widthIn(min = 60.dp)
+                        .padding(end = 6.dp, bottom = 6.dp),
+                )*/
+
+                Text(
+                    text = messageChat.messageBody,
+                    modifier = Modifier
+                        .constrainAs(messageText) {
+                            start.linkTo(parent.start)
+                            end.linkTo(parent.end)
+                            top.linkTo(parent.top)
+                            bottom.linkTo(indicatorRow.top)
+                        }
+                        .padding(6.dp)
+                )
+
             }
         }
+    }
+}
+
+@Composable
+fun DividerScreen(messageChat: MessageChat) {
+    Column(
+        modifier = Modifier
+            .wrapContentHeight()
+            .fillMaxWidth()
+            .padding(6.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = messageChat.messageBody,
+            modifier = Modifier
+                .background(Gray50, shape = RoundedCornerShape(6.dp))
+                .padding(horizontal = 6.dp, vertical = 3.dp),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Light
+        )
     }
 }
 

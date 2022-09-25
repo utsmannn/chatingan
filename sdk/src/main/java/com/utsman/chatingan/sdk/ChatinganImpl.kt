@@ -23,6 +23,7 @@ import com.utsman.chatingan.sdk.services.FirebaseServices
 import com.utsman.chatingan.sdk.storage.ChatInfoStorage
 import com.utsman.chatingan.sdk.storage.MessageChatStorage
 import com.utsman.chatingan.sdk.storage.ContactStorage
+import com.utsman.chatingan.sdk.utils.DividerCalculator
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
@@ -162,10 +163,11 @@ internal class ChatinganImpl(
             .debounce(500)
             .map {
                 it.map { messages ->
+                    val newMessages = DividerCalculator.calculateDividerChat(messages)
                     Chat(
                         id = chatInfo.id,
                         contact = contact,
-                        messages = messages,
+                        messages = newMessages,
                         chatInfo = chatInfo
                     )
                 }
