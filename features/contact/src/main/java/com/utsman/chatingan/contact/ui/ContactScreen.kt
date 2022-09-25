@@ -103,7 +103,7 @@ fun ContactItemScreen(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = contact.id,
+                text = contact.detail.email,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Light
             )

@@ -15,9 +15,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Icon
@@ -36,9 +39,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -68,7 +75,6 @@ fun ChatScreen(
     val data by viewModel.chatState.collectAsState()
 
     viewModel.getChat(contact)
-    viewModel.readChat(contact)
 
     Scaffold(
         topBar = {
@@ -92,12 +98,18 @@ fun ChatScreen(
                             modifier = Modifier.weight(10f),
                             state = scrollState,
                             content = {
-                                items(it.messages) {
-                                    MessageItem(messageChat = it, contact = contact)
+                                itemsIndexed(it.messages) { index, item ->
+                                    val isLastIndex = index == it.messages.lastIndex
+                                    if (isLastIndex) {
+                                        viewModel.readChat(contact, item.id)
+                                    }
+                                    MessageItem(messageChat = item, contact = contact)
                                 }
                             })
                     }.doOnLoading {
-                        LoadingScreen(modifier = Modifier.weight(10f).fillMaxWidth())
+                        LoadingScreen(modifier = Modifier
+                            .weight(10f)
+                            .fillMaxWidth())
                     }.doOnFailure {
                         Text(text = it.message.orEmpty())
                     }.doOnEmpty {
@@ -141,11 +153,15 @@ fun TopBarChat(contact: Contact, onClick: () -> Unit) {
     )
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BottomBarChat(
     onSend: (String) -> Unit
 ) {
     var inputValue by remember { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -159,11 +175,13 @@ fun BottomBarChat(
                 .padding(horizontal = 6.dp, vertical = 6.dp)
                 .background(Color.White)
         ) {
-            TextField(modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp), value = inputValue, onValueChange = {
-                inputValue = it
-            })
+            TextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp), value = inputValue, onValueChange = {
+                    inputValue = it
+                }
+            )
         }
 
         Button(
@@ -171,6 +189,9 @@ fun BottomBarChat(
             onClick = {
                 onSend.invoke(inputValue)
                 inputValue = ""
+                keyboardController?.hide()
+                focusManager.clearFocus(true)
+
             },
             content = {
                 Text(text = "send")

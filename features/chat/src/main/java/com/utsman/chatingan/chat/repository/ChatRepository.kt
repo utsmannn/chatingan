@@ -14,7 +14,7 @@ interface ChatRepository {
     val message: FlowEvent<MessageChat>
 
     suspend fun getChat(contact: Contact)
-    suspend fun readChat(contact: Contact)
+    suspend fun readChat(contact: Contact, messageId: String)
     suspend fun sendMessage(contact: Contact, message: String, chatInfo: ChatInfo?)
 
     companion object : KoinInjector {

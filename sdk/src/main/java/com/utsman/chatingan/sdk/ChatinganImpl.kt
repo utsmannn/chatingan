@@ -5,6 +5,7 @@ import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.event.defaultStateEvent
 import com.utsman.chatingan.common.event.emptyStateEvent
+import com.utsman.chatingan.common.event.errorStateEvent
 import com.utsman.chatingan.common.event.filterFlow
 import com.utsman.chatingan.common.event.invoke
 import com.utsman.chatingan.common.event.map
@@ -25,6 +26,7 @@ import com.utsman.chatingan.sdk.storage.ContactStorage
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -76,8 +78,6 @@ internal class ChatinganImpl(
     override suspend fun addMeContact(contact: Contact): FlowEvent<Contact> {
         val fcmToken = config.fcmToken
         val contactStore = ContactStore.fromContact(contact, fcmToken)
-        println("ASUUUUUUU contact raw -> $contact")
-        println("ASUUUUUUU contact store -> $contactStore")
         return contactStorage.addItem(contactStore, contact.id)
     }
 
@@ -91,13 +91,6 @@ internal class ChatinganImpl(
         messageChat: MessageChat,
         chatInfo: ChatInfo?
     ): FlowEvent<MessageChat> {
-        val messageChatStore = MessageChatStore.build(
-            senderId = messageChat.senderId,
-            receiverId = messageChat.receiverId,
-            message = messageChat.messageBody,
-            date = messageChat.lastUpdate
-        )
-
         val messageRequest = FirebaseMessageRequest.createFromMessage(
             messageChat = messageChat,
             title = contact.name,
@@ -110,15 +103,16 @@ internal class ChatinganImpl(
         val currentChatInfo = chatInfoStorage.findItemById(pathId)
 
         val currentChatInfoId = currentChatInfo?.id
-        val currentChatInfoReadByIds = currentChatInfo?.readByIds
 
         val newChatInfo = ChatInfo(
             id = currentChatInfoId ?: pathId,
             lastMessage = messageChat,
             memberIds = listOf(messageChat.senderId, messageChat.receiverId).sorted(),
-            readByIds = currentChatInfoReadByIds ?: listOf(messageChat.senderId),
+            readByIds = listOf(messageChat.senderId),
             lastUpdate = messageChat.lastUpdate
         )
+
+        val messageChatStore = messageChat.toStore()
 
         return firebaseServices.sendMessage(messageRequest)
             .asFlowEvent()
@@ -243,8 +237,21 @@ internal class ChatinganImpl(
             .stateIn(IOScope())
     }
 
-    override suspend fun markChatRead(contacts: List<Contact>): FlowEvent<ChatInfo> {
-        return defaultStateEvent()
+    override suspend fun markChatRead(contact: Contact, messageId: String): FlowEvent<ChatInfo> {
+        val pathId = chatInfoIdFinder.getForContact(contact) ?: UUID.randomUUID().toString()
+        val currentChatInfo = chatInfoStorage.findItemById(pathId) ?: return emptyStateEvent()
+        return if (messageId == currentChatInfo.lastMessage.id) {
+            val currentLastReadIds = currentChatInfo.readByIds
+            val newLastReadIds = if (!currentLastReadIds.contains(config.contact.id)) {
+                currentLastReadIds + config.contact.id
+            } else {
+                currentLastReadIds
+            }
+            currentChatInfo.readByIds = newLastReadIds.sorted()
+            chatInfoStorage.addItem(currentChatInfo.toStore(), pathId, isMerge = true)
+        } else {
+            errorStateEvent("Empty Chat Info")
+        }
     }
 
 

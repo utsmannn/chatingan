@@ -31,7 +31,7 @@ interface Chatingan {
     suspend fun getContact(id: String): FlowEvent<Contact>
 
     suspend fun getChats(): FlowEvent<List<Chat>>
-    suspend fun markChatRead(contacts: List<Contact>): FlowEvent<ChatInfo>
+    suspend fun markChatRead(contact: Contact, messageId: String): FlowEvent<ChatInfo>
     suspend fun tokenForId(id: String): FlowEvent<String>
 
     companion object {

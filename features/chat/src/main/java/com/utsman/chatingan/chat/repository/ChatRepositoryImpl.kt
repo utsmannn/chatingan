@@ -28,13 +28,9 @@ class ChatRepositoryImpl : ChatRepository {
             .collect(_chatState)
     }
 
-    override suspend fun readChat(contact: Contact) {
+    override suspend fun readChat(contact: Contact, messageId: String) {
         val chatingan = Chatingan.getInstance()
-        val contactMe = chatingan.config.contact
-        val contacts = listOf(contactMe, contact)
-
-        Chatingan.getInstance()
-            .markChatRead(contacts)
+        chatingan.markChatRead(contact, messageId)
     }
 
     override suspend fun sendMessage(contact: Contact, message: String, chatInfo: ChatInfo?) {

@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Parcelable
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.utsman.chatingan.sdk.data.store.MessageChatStore
 import com.utsman.chatingan.sdk.data.type.Entity
 import kotlinx.parcelize.Parcelize
 import java.time.Instant
@@ -23,5 +24,11 @@ data class MessageChat(
 
     override fun toJsonUri(): String {
         return Uri.encode(toJson())
+    }
+
+    internal fun toStore(): MessageChatStore {
+        return MessageChatStore(
+            id, senderId, receiverId, messageBody, lastUpdate
+        )
     }
 }

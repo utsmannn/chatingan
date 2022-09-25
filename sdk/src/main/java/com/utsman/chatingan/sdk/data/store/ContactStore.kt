@@ -24,6 +24,7 @@ data class ContactStore(
             id = id,
             name = name,
             image = image,
+            detail = detail,
             lastUpdate = lastUpdate
         )
     }
