@@ -11,7 +11,7 @@ import java.util.*
 
 data class ChatInfo(
     var id: String = "",
-    var lastMessage: String = "",
+    var lastMessage: MessageChat = MessageChat(),
     var memberIds: List<String> = emptyList(),
     var readByIds: List<String> = emptyList(),
     var lastUpdate: Date = Date.from(Instant.now())

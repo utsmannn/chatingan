@@ -13,6 +13,7 @@ data class ChatinganConfig(
         private var name: String = ""
         private var id: String = UUID.randomUUID().toString()
         private var image: String = ""
+        private var detail: Contact.Detail = Contact.Detail()
 
         fun setId(id: String): ChatinganContactBuilder {
             this.id = id
@@ -29,8 +30,15 @@ data class ChatinganConfig(
             return this
         }
 
+        fun setDetail(detail: Contact.Detail): ChatinganContactBuilder {
+            this.detail = detail
+            return this
+        }
+
         fun build(): Contact {
-            return Contact(id, name, image)
+            return Contact(
+                id, name, image, detail
+            )
         }
     }
 

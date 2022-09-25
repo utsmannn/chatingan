@@ -9,6 +9,7 @@ import com.utsman.chatingan.common.ui.EmptyScreen
 import com.utsman.chatingan.common.ui.FailureScreen
 import com.utsman.chatingan.common.ui.LoadingScreen
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -17,7 +18,9 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 fun <T> defaultStateEvent(): MutableStateFlow<StateEvent<T>> = MutableStateFlow(StateEvent.Idle())
-fun <T> loadingStateEvent(): MutableStateFlow<StateEvent<T>> = MutableStateFlow(StateEvent.Loading())
+fun <T> loadingStateEvent(): MutableStateFlow<StateEvent<T>> =
+    MutableStateFlow(StateEvent.Loading())
+
 fun <T> emptyStateEvent(): MutableStateFlow<StateEvent<T>> = MutableStateFlow(StateEvent.Empty())
 fun <T> errorStateEvent(message: String?): MutableStateFlow<StateEvent<T>> = MutableStateFlow(
     StateEvent.Failure(
@@ -25,7 +28,7 @@ fun <T> errorStateEvent(message: String?): MutableStateFlow<StateEvent<T>> = Mut
     )
 )
 
-fun <T>loadingEventValue() = StateEvent.Loading<T>()
+fun <T> loadingEventValue() = StateEvent.Loading<T>()
 
 inline fun <T, U> StateEvent<T>.map(mapper: (T) -> U): StateEvent<U> {
     return when (this) {
@@ -66,7 +69,6 @@ inline fun <reified T> LiveData<StateEvent<T>>.subscribeStateOf(
     crossinline onSuccess: T.() -> Unit
 ) {
     this.observe(activity) {
-        println("")
         when (it) {
             is StateEvent.Idle<*> -> onIdle.invoke()
             is StateEvent.Loading<*> -> onLoading.invoke()
@@ -183,6 +185,13 @@ inline fun <reified T> StateEvent<T>.doOnEmpty(failure: () -> Unit): StateEvent<
     return this
 }
 
+@Composable
+inline fun <reified T> StateEvent<T>.defaultCompose(): StateEvent<T> {
+    return doOnFailure { FailureScreen(message = it.message.orEmpty()) }
+        .doOnLoading { LoadingScreen() }
+        .doOnEmpty { EmptyScreen() }
+}
+
 operator fun <T> StateEvent<T>.invoke(): T? {
     return if (this is StateEvent.Success) {
         data
@@ -200,6 +209,19 @@ fun <T> StateEvent<T>.getExceptionOfNull(): Throwable? {
 }
 
 suspend fun <T> FlowEvent<List<T>>.filterFlow(predicate: (T) -> Boolean): FlowEvent<List<T>> {
+    val filtered = map {
+        if (it is StateEvent.Success) {
+            val data = it.data.filter(predicate)
+            StateEvent.Success(data)
+        } else {
+            it
+        }
+    }
+    return filtered.stateIn(MainScope())
+}
+
+
+suspend fun <T> Flow<StateEvent<List<T>>>.filterFlow(predicate: (T) -> Boolean): FlowEvent<List<T>> {
     val filtered = map {
         if (it is StateEvent.Success) {
             val data = it.data.filter(predicate)

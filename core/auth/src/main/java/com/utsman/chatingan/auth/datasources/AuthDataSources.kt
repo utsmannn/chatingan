@@ -11,12 +11,15 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.utsman.chatingan.auth.component.AuthComponent
 import com.utsman.chatingan.auth.data.AuthMapper
 import com.utsman.chatingan.auth.data.User
+import com.utsman.chatingan.common.IOScope
 import com.utsman.chatingan.common.event.StateEvent
+import com.utsman.chatingan.common.event.loadingStateEvent
 import com.utsman.chatingan.common.koin.KoinInjector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.koin.core.module.Module
@@ -107,7 +110,6 @@ class AuthDataSources {
         return flow {
             val userLoadingState = StateEvent.Loading<User>()
             emit(userLoadingState)
-
             val userFinalState = FirebaseAuth.getInstance()
                 .currentUser
                 .let {
@@ -121,7 +123,7 @@ class AuthDataSources {
                 }
 
             emit(userFinalState)
-        }
+        }.stateIn(IOScope())
     }
 
     suspend fun signIn(component: AuthComponent): Flow<StateEvent<User>> {

@@ -12,6 +12,7 @@ data class Contact(
     var id: String = "",
     var name: String = "",
     var image: String = "",
+    var detail: Detail = Detail(),
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Entity {
     override fun toJson(): String {
@@ -22,6 +23,10 @@ data class Contact(
     override fun toJsonUri(): String {
         return Uri.encode(toJson())
     }
+
+    data class Detail(
+        var email: String = ""
+    )
 
     companion object {
         fun getType(): Type {

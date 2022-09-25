@@ -6,14 +6,10 @@ import java.util.*
 
 class MessageChatStorage(
     val id: String
-) : Storage<MessageChatStore, MessageChat>() {
+) : Storage<MessageChatStore, MessageChat>(MessageChatStore::class) {
 
     override fun path(): String {
         return "chats/$id/messages"
-    }
-
-    override fun mapStoreTransform(map: Map<String, Any>, date: Date): MessageChatStore {
-        return MessageChatStore.fromMap(map, date)
     }
 
     override fun dataMapper(store: MessageChatStore): MessageChat {

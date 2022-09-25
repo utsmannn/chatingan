@@ -3,13 +3,18 @@ package com.utsman.chatingan.home.repository
 import com.utsman.chatingan.auth.data.User
 import com.utsman.chatingan.auth.datasources.AuthDataSources
 import com.utsman.chatingan.common.event.FlowEvent
+import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.event.defaultStateEvent
+import com.utsman.chatingan.common.event.errorStateEvent
 import com.utsman.chatingan.common.event.filterFlow
+import com.utsman.chatingan.common.event.invoke
 import com.utsman.chatingan.common.event.loadingEventValue
 import com.utsman.chatingan.common.event.onSuccess
 import com.utsman.chatingan.sdk.Chatingan
 import com.utsman.chatingan.sdk.data.entity.Chat
+import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
+import kotlinx.coroutines.flow.map
 
 class HomeRepositoryImpl(
     private val authDataSources: AuthDataSources
@@ -33,17 +38,6 @@ class HomeRepositoryImpl(
 
     override suspend fun getUser() {
         authDataSources.getCurrentUser().collect {
-            it.onSuccess { user ->
-                val contact = Contact(
-                    id = user.id,
-                    name = user.name,
-                    image = user.photoUrl
-                )
-
-                Chatingan
-                    .getInstance()
-                    .addMeContact(contact)
-            }
             _userState.value = it
         }
     }
@@ -52,7 +46,7 @@ class HomeRepositoryImpl(
         _contactState.value = loadingEventValue()
         Chatingan
             .getInstance()
-            .contacts().collect(_contactState)
+            .getContacts().collect(_contactState)
     }
 
     override suspend fun getTokenId(id: String) {
@@ -66,9 +60,13 @@ class HomeRepositoryImpl(
         Chatingan
             .getInstance()
             .getChats()
-            .filterFlow {
-                it.id.isNotEmpty()
-            }
             .collect(_chatsState)
+    }
+
+    override suspend fun getContact(chatInfo: ChatInfo): FlowEvent<Contact> {
+        val contactMeId = Chatingan.getInstance().config.contact.id
+        val contactId = chatInfo.memberIds.firstOrNull { it != contactMeId }
+            ?: return errorStateEvent("Contact Id is null")
+        return Chatingan.getInstance().getContact(contactId)
     }
 }

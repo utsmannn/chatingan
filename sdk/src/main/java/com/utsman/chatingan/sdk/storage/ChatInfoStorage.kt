@@ -14,21 +14,13 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.*
 import kotlin.coroutines.resume
 
-class ChatInfoStorage : Storage<ChatInfoStore, ChatInfo>() {
+class ChatInfoStorage : Storage<ChatInfoStore, ChatInfo>(ChatInfoStore::class) {
     override fun path(): String {
         return COLLECTION_PATH
     }
 
-    override fun mapStoreTransform(map: Map<String, Any>, date: Date): ChatInfoStore {
-        return ChatInfoStore.fromMap(map, date)
-    }
-
     override fun dataMapper(store: ChatInfoStore): ChatInfo {
         return store.toChatInfo()
-    }
-
-    companion object {
-        private const val COLLECTION_PATH = "chat_info"
     }
 
     class IdFinder(private val config: ChatinganConfig) {
@@ -42,7 +34,7 @@ class ChatInfoStorage : Storage<ChatInfoStore, ChatInfo>() {
             val statePath = loadingStateEvent<String>()
             firebaseFirestore
                 .collection(COLLECTION_PATH)
-                .whereArrayContainsAny("memberIds", listOf(meContactId(), contact.id))
+                .whereEqualTo("memberIds", arrayListOf(meContactId(), contact.id).sorted())
                 .addSnapshotListener { value, error ->
                     if (error != null) {
                         statePath.value = StateEvent.Failure(error)
@@ -64,7 +56,7 @@ class ChatInfoStorage : Storage<ChatInfoStore, ChatInfo>() {
             return suspendCancellableCoroutine { task ->
                 firebaseFirestore
                     .collection(COLLECTION_PATH)
-                    .whereArrayContainsAny("memberIds", listOf(meContactId(), contact.id))
+                    .whereEqualTo("memberIds", arrayListOf(meContactId(), contact.id).sorted())
                     .get()
                     .addOnSuccessListener { value ->
                         val document = value?.documents?.firstOrNull()
@@ -82,4 +74,10 @@ class ChatInfoStorage : Storage<ChatInfoStore, ChatInfo>() {
             }
         }
     }
+
+
+    companion object {
+        private const val COLLECTION_PATH = "chat_info"
+    }
+
 }

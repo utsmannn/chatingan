@@ -5,8 +5,7 @@ import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.event.defaultStateEvent
 import com.utsman.chatingan.common.event.emptyStateEvent
-import com.utsman.chatingan.common.event.errorStateEvent
-import com.utsman.chatingan.common.event.getExceptionOfNull
+import com.utsman.chatingan.common.event.filterFlow
 import com.utsman.chatingan.common.event.invoke
 import com.utsman.chatingan.common.event.map
 import com.utsman.chatingan.network.asFlowEvent
@@ -16,53 +15,53 @@ import com.utsman.chatingan.sdk.data.entity.Chat
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
+import com.utsman.chatingan.sdk.data.store.ChatInfoStore
 import com.utsman.chatingan.sdk.data.store.ContactStore
 import com.utsman.chatingan.sdk.data.store.MessageChatStore
 import com.utsman.chatingan.sdk.services.FirebaseServices
 import com.utsman.chatingan.sdk.storage.ChatInfoStorage
-import com.utsman.chatingan.sdk.storage.ChatStorage
 import com.utsman.chatingan.sdk.storage.MessageChatStorage
 import com.utsman.chatingan.sdk.storage.ContactStorage
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.*
 
 internal class ChatinganImpl(
-    private val contactStorage: ContactStorage,
-    private val chatinganConfig: ChatinganConfig,
+    private val contactStorage: ContactStorage
 ) : Chatingan {
 
-    private val firebaseServices: FirebaseServices by lazy {
-        FirebaseServices.instance(chatinganConfig)
+    @Volatile
+    private var configInstance: ChatinganConfig = ChatinganConfig()
+
+    override fun initializeApp(config: ChatinganConfig) {
+        this.configInstance = config
+
+        IOScope().launch {
+            addMeContact(config.contact)
+        }
     }
+
+    private val firebaseServices: FirebaseServices
+        get() = FirebaseServices.instance(configInstance)
 
     override val config: ChatinganConfig
-        get() = chatinganConfig
+        get() = configInstance
 
-    private val chatStorage: ChatStorage by lazy {
-        ChatStorage(contactStorage, config)
-    }
+    private val chatInfoStorage: ChatInfoStorage
+        get() = ChatInfoStorage()
 
-    private val chatInfoStorage: ChatInfoStorage by lazy {
-        ChatInfoStorage()
-    }
-
-    private val chatInfoIdFinder: ChatInfoStorage.IdFinder by lazy {
-        ChatInfoStorage.IdFinder(chatinganConfig)
-    }
+    private val chatInfoIdFinder: ChatInfoStorage.IdFinder
+        get() = ChatInfoStorage.IdFinder(configInstance)
 
     override suspend fun updateFcm(fcmToken: String): FlowEvent<String> {
         val currentContact = config.contact
-        return if (currentContact != Contact()) {
+        return if (currentContact.id.isNotEmpty()) {
             addMeContact(currentContact)
                 .map { state ->
                     state.map {
@@ -77,11 +76,13 @@ internal class ChatinganImpl(
     override suspend fun addMeContact(contact: Contact): FlowEvent<Contact> {
         val fcmToken = config.fcmToken
         val contactStore = ContactStore.fromContact(contact, fcmToken)
+        println("ASUUUUUUU contact raw -> $contact")
+        println("ASUUUUUUU contact store -> $contactStore")
         return contactStorage.addItem(contactStore, contact.id)
     }
 
-    override suspend fun contacts(): FlowEvent<List<Contact>> {
-        return contactStorage.listenItem()
+    override suspend fun getContacts(): FlowEvent<List<Contact>> {
+        return contactStorage.listenItem().filterFlow { it.id != config.contact.id }
     }
 
     @OptIn(FlowPreview::class)
@@ -113,8 +114,8 @@ internal class ChatinganImpl(
 
         val newChatInfo = ChatInfo(
             id = currentChatInfoId ?: pathId,
-            lastMessage = messageChat.messageBody,
-            memberIds = listOf(messageChat.senderId, messageChat.receiverId),
+            lastMessage = messageChat,
+            memberIds = listOf(messageChat.senderId, messageChat.receiverId).sorted(),
             readByIds = currentChatInfoReadByIds ?: listOf(messageChat.senderId),
             lastUpdate = messageChat.lastUpdate
         )
@@ -124,7 +125,11 @@ internal class ChatinganImpl(
             .flatMapMerge {
                 chatInfoStorage.addItem(newChatInfo.toStore(), newChatInfo.id, isMerge = true)
                     .flatMapMerge {
-                        messageChatStorage.addItem(messageChatStore, messageChatStore.id, isMerge = false)
+                        messageChatStorage.addItem(
+                            messageChatStore,
+                            messageChatStore.id,
+                            isMerge = false
+                        )
                     }
             }
             .stateIn(IOScope())
@@ -158,6 +163,7 @@ internal class ChatinganImpl(
                     chatInfo = chatInfoStorage.findItemById(pathId) ?: ChatInfo()
                     MessageChatStorage(pathId)
                 }
+
             }.flatMapMerge {
                 val storage = it.invoke()
                 storage?.listenItem() ?: emptyStateEvent()
@@ -167,7 +173,7 @@ internal class ChatinganImpl(
                 it.map { messages ->
                     Chat(
                         id = chatInfo.id,
-                        contacts = listOf(config.contact, contact),
+                        contact = contact,
                         messages = messages,
                         chatInfo = chatInfo
                     )
@@ -184,7 +190,7 @@ internal class ChatinganImpl(
             .stateIn(IOScope())
     }
 
-    override suspend fun getChatInfos(contact: Contact): FlowEvent<List<ChatInfo>> {
+    override suspend fun getChatInfos(): FlowEvent<List<ChatInfo>> {
         return chatInfoStorage.listenItem()
     }
 
@@ -193,12 +199,52 @@ internal class ChatinganImpl(
         return chatInfoStorage.findItemByIdFlow(id).stateIn(IOScope())
     }
 
+    override suspend fun getContact(id: String): FlowEvent<Contact> {
+        return contactStorage.findItemByIdFlow(id).stateIn(IOScope())
+    }
+
+    @Suppress("LABEL_NAME_CLASH")
     override suspend fun getChats(): FlowEvent<List<Chat>> {
-        return chatStorage.getChatList()
+        return chatInfoStorage.listenItem()
+            .map { state ->
+                state.map { infos ->
+                    infos
+                        .filter {
+                            it.memberIds.contains(config.contact.id)
+                        }
+                        .map { info ->
+                            val member = info.memberIds
+                                .find { it != config.contact.id } ?: return@map null
+                            val contact = contactStorage.findItemById(member) ?: return@map null
+
+                            val chat = Chat(
+                                id = info.id,
+                                contact = contact,
+                                messages = emptyList(),
+                                chatInfo = info
+                            )
+                            chat
+
+                        }
+                        .filterNotNull()
+                        .asReversed()
+                }
+            }
+            .filterFlow {
+                it.id.isNotEmpty()
+            }
+            .map {
+                if (it.invoke().isNullOrEmpty()) {
+                    StateEvent.Empty()
+                } else {
+                    it
+                }
+            }
+            .stateIn(IOScope())
     }
 
     override suspend fun markChatRead(contacts: List<Contact>): FlowEvent<ChatInfo> {
-       return defaultStateEvent()
+        return defaultStateEvent()
     }
 
 

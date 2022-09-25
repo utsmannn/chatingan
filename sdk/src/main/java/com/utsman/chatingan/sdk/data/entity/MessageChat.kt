@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.utsman.chatingan.sdk.data.type.Entity
 import kotlinx.parcelize.Parcelize
+import java.time.Instant
 import java.util.*
 
 data class MessageChat(
@@ -13,7 +14,7 @@ data class MessageChat(
     var senderId: String = "",
     var receiverId: String = "",
     var messageBody: String = "",
-    var lastUpdate: Date
+    var lastUpdate: Date = Date.from(Instant.now())
 ) : Entity {
     override fun toJson(): String {
         val type = object : TypeToken<MessageChat>() {}.type

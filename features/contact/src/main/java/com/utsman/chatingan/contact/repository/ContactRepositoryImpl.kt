@@ -23,7 +23,7 @@ class ContactRepositoryImpl(
     override suspend fun getContact() {
         Chatingan
             .getInstance()
-            .contacts()
+            .getContacts()
             .distinctUntilChangedBy { it }
             .collect(_contacts)
     }

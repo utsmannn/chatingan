@@ -8,7 +8,10 @@ import org.koin.dsl.module
 
 interface MainRepository {
     val userState: FlowEvent<User>
+    val firebaseTokenState: FlowEvent<String>
+
     suspend fun checkUser()
+    suspend fun getFirebaseToken()
 
     companion object : KoinInjector {
         @JvmStatic

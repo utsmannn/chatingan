@@ -30,27 +30,12 @@ data class MessageChatStore(
     }
 
     companion object {
-        private const val FIELD_ID = "id"
-        private const val FIELD_SENDER_ID = "senderId"
-        private const val FIELD_RECEIVER_ID = "receiverId"
-        private const val FIELD_MESSAGE_BODY = "messageBody"
-
         fun build(senderId: String, receiverId: String, message: String, date: Date): MessageChatStore {
             return MessageChatStore(
                 id = UUID.randomUUID().toString(),
                 senderId = senderId,
                 receiverId = receiverId,
                 messageBody = message,
-                lastUpdate = date
-            )
-        }
-
-        fun fromMap(data: Map<String, Any>, date: Date): MessageChatStore {
-            return MessageChatStore(
-                id = data[FIELD_ID].toString(),
-                senderId = data[FIELD_SENDER_ID].toString(),
-                receiverId = data[FIELD_RECEIVER_ID].toString(),
-                messageBody = data[FIELD_MESSAGE_BODY].toString(),
                 lastUpdate = date
             )
         }

@@ -45,28 +45,10 @@ class AppApplication : Application() {
             println("--- END YOUR TOKEN ---")
 
             println("--- TRY SET CHATINGAN INSTANCE ---")
-            authDataSources.getCurrentUser().collect {
-                it.onSuccess { user ->
-                    val chatinganContact = ChatinganConfig.ChatinganContactBuilder()
-                        .setId(user.id)
-                        .setName(user.name)
-                        .setImage(user.photoUrl)
-                        .build()
-
-                    val chatinganConfig = ChatinganConfig.ChatinganConfigBuilder()
-                        .setContact(contact = chatinganContact)
-                        .setServerKey(serverKey = SERVER_KEY)
-                        .setFcmToken(fcmToken = authDataSources.firebaseToken())
-                        .build()
-
-                    println("--- SET CHATINGAN INSTANCE ---")
-                    Chatingan.setInstance(chatinganConfig)
-                }
-            }
         }
     }
 
     companion object {
-        private const val SERVER_KEY = "AAAAuXTwdzI:APA91bFQm5BAlwwF8XEuEmw4s3hMzH8b4vQGy9sK2rsahAQh0rxQRZvZQxBbYzzx7VKHg98J2t6O2dofvJy3qxWLU7AhNvpB1JqlmzdcF1ql52VRLnpjxEWP6B8o2kQMV4Ms6UZN4AxH"
+        const val SERVER_KEY = "AAAAuXTwdzI:APA91bFQm5BAlwwF8XEuEmw4s3hMzH8b4vQGy9sK2rsahAQh0rxQRZvZQxBbYzzx7VKHg98J2t6O2dofvJy3qxWLU7AhNvpB1JqlmzdcF1ql52VRLnpjxEWP6B8o2kQMV4Ms6UZN4AxH"
     }
 }

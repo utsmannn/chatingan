@@ -4,14 +4,10 @@ import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.store.ContactStore
 import java.util.*
 
-class ContactStorage : Storage<ContactStore, Contact>() {
+class ContactStorage : Storage<ContactStore, Contact>(ContactStore::class) {
 
     override fun path(): String {
         return COLLECTION_CONTACT
-    }
-
-    override fun mapStoreTransform(map: Map<String, Any>, date: Date): ContactStore {
-        return ContactStore.fromMap(map, date)
     }
 
     override fun dataMapper(store: ContactStore): Contact {

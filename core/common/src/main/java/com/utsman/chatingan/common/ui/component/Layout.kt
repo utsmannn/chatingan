@@ -64,12 +64,12 @@ fun DefaultTopBar(
 @Composable
 fun DefaultLayoutAppBar(
     title: String,
-    onBack: () -> Unit = {},
+    onBack:( () -> Unit)? = null,
     content: @Composable PaddingValues.() -> Unit
 ) {
     Scaffold(
         topBar = {
-            if (onBack == {}) {
+            if (onBack == null) {
                 TopAppBar(
                     title = {
                         Text(text = title)
@@ -88,7 +88,11 @@ fun DefaultLayoutAppBar(
                 )
             }
         },
-        content = content
+        content = {
+            ColumnCenter(content = {
+                content.invoke(it)
+            })
+        }
     )
 }
 

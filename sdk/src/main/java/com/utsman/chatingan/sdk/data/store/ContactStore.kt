@@ -14,6 +14,7 @@ data class ContactStore(
     var name: String = "",
     var image: String = "",
     var token: String = "",
+    var detail: Contact.Detail = Contact.Detail(),
     @ServerTimestamp
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Store {
@@ -28,26 +29,12 @@ data class ContactStore(
     }
 
     companion object {
-        private const val FIELD_ID = "id"
-        private const val FIELD_NAME = "name"
-        private const val FIELD_IMAGE = "image"
-        private const val FIELD_TOKEN = "token"
-
-        fun fromMap(data: Map<String, Any>, date: Date): ContactStore {
-            return ContactStore(
-                id = data[FIELD_ID].toString(),
-                name = data[FIELD_NAME].toString(),
-                image = data[FIELD_IMAGE].toString(),
-                token = data[FIELD_TOKEN].toString(),
-                lastUpdate = date
-            )
-        }
-
         fun fromContact(contact: Contact, fcmToken: String): ContactStore {
             return  ContactStore(
                 id = contact.id,
                 name = contact.name,
                 image = contact.image,
+                detail = contact.detail,
                 token = fcmToken
             )
         }

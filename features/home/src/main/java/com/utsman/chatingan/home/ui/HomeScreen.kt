@@ -1,6 +1,5 @@
 package com.utsman.chatingan.home.ui
 
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,23 +21,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.utsman.chatingan.navigation.NavigationProvider
+import com.utsman.chatingan.common.event.doOnEmpty
 import com.utsman.chatingan.common.event.doOnFailure
 import com.utsman.chatingan.common.event.doOnLoading
 import com.utsman.chatingan.common.event.onSuccess
-import com.utsman.chatingan.common.ui.component.ColumnCenter
+import com.utsman.chatingan.common.ui.EmptyScreen
 import com.utsman.chatingan.common.ui.FailureScreen
 import com.utsman.chatingan.common.ui.LoadingScreen
 import com.utsman.chatingan.common.ui.clickableRipple
+import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.home.R
-import com.utsman.chatingan.sdk.Chatingan
+import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.sdk.data.entity.Contact
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
@@ -49,7 +48,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = getViewModel()
 ) {
     val chatsState by viewModel.chatState.collectAsState()
-    val context = LocalContext.current
 
     viewModel.getUser()
     Scaffold(
@@ -68,40 +66,32 @@ fun HomeScreen(
             )
         }
     ) {
-        ColumnCenter {
+        DefaultLayoutAppBar(title = "Chatingan") {
+
             chatsState.doOnLoading {
                 LoadingScreen()
+            }
+            chatsState.doOnEmpty {
+                EmptyScreen()
             }
             chatsState.doOnFailure {
                 FailureScreen(message = it.message.orEmpty())
             }
             chatsState.onSuccess { chats ->
-                DefaultLayoutAppBar(title = "Chatingan") {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        content = {
-                            items(chats) { chat ->
-                                val contacts = chat.contacts.first { contact ->
-                                    val contactIdMe = Chatingan.getInstance()
-                                        .config
-                                        .contact
-                                        .id
-
-                                    contact.id != contactIdMe
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    content = {
+                        items(chats) { chat ->
+                            val message = chat.chatInfo.lastMessage
+                            ChatScreen(
+                                contact = chat.contact,
+                                message = message.messageBody,
+                                onClick = {
+                                    navigationProvider.navigateToChat(chat.contact)
                                 }
-
-                                val message = chat.chatInfo.lastMessage
-
-                                ChatScreen(
-                                    contact = contacts,
-                                    message = message,
-                                    onClick = {
-                                        Toast.makeText(context, "", Toast.LENGTH_SHORT).show()
-                                    }
-                                )
-                            }
-                        })
-                }
+                            )
+                        }
+                    })
             }
         }
     }

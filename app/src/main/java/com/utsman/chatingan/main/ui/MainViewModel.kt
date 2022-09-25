@@ -5,6 +5,7 @@ import com.utsman.chatingan.navigation.RouteViewModel
 import com.utsman.chatingan.common.koin.KoinInjector
 import com.utsman.chatingan.main.repository.MainRepository
 import com.utsman.chatingan.routes.AppRoute
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
@@ -14,13 +15,15 @@ class MainViewModel(
     private val repository: MainRepository
 ) : RouteViewModel(AppRoute.Splash) {
     val userState = repository.userState
+    val firebaseTokenState = repository.firebaseTokenState
 
     init {
-        checkUser()
-    }
-
-    private fun checkUser() = viewModelScope.launch {
-        repository.checkUser()
+        viewModelScope.launch {
+            repository.checkUser()
+        }
+        viewModelScope.launch {
+            repository.getFirebaseToken()
+        }
     }
 
     companion object : KoinInjector {

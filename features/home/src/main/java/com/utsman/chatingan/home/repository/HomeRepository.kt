@@ -4,6 +4,7 @@ import com.utsman.chatingan.auth.data.User
 import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.koin.KoinInjector
 import com.utsman.chatingan.sdk.data.entity.Chat
+import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -20,6 +21,9 @@ interface HomeRepository {
     suspend fun getTokenId(id: String)
 
     suspend fun getChats()
+
+    /* Single one shoot */
+    suspend fun getContact(chatInfo: ChatInfo): FlowEvent<Contact>
 
     companion object : KoinInjector {
         @JvmStatic

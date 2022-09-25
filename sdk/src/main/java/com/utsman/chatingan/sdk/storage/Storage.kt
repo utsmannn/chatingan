@@ -1,6 +1,7 @@
 package com.utsman.chatingan.sdk.storage
 
 import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
@@ -19,14 +20,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.*
 import kotlin.coroutines.resume
+import kotlin.reflect.KClass
 
-abstract class Storage<T : Store, U : Entity> {
+abstract class Storage<T : Store, U : Entity>(private val storeClass: KClass<T>) {
     private val firebaseFirestore: FirebaseFirestore by lazy {
         Firebase.firestore
     }
 
     abstract fun path(): String
-    abstract fun mapStoreTransform(map: Map<String, Any>, date: Date): T
     abstract fun dataMapper(store: T): U
 
     private fun collection(): CollectionReference {
@@ -125,19 +126,11 @@ abstract class Storage<T : Store, U : Entity> {
                     val failureState = StateEvent.Failure<List<U>>(error)
                     listState.value = failureState
                 }
-
                 if (value != null) {
-                    val contacts = value.documents
-                        .map {
-                            Pair(it.data, it.getDate(dateField()))
-                        }
-                        .filter { it.first != null && it.second != null }
-                        .map {
-                            mapStoreTransform(checkNotNull(it.first), checkNotNull(it.second))
-                        }
+                    val items = value.documents.mapNotNull { it.toObject(storeClass.java) }
                         .map { dataMapper(it) }
 
-                    val successState = StateEvent.Success(contacts)
+                    val successState = StateEvent.Success(items)
                     listState.value = successState
                 } else {
                     val emptyState = StateEvent.Empty<List<U>>()
@@ -154,10 +147,8 @@ abstract class Storage<T : Store, U : Entity> {
                 .document(id)
                 .get()
                 .addOnSuccessListener {
-                    val dataRaw = it.data
-                    val date = it.getDate(dateField())
-                    if (dataRaw != null && date != null) {
-                        val data = mapStoreTransform(dataRaw, date)
+                    val data = it.toObject(storeClass.java)
+                    if (data != null) {
                         task.resume(data)
                     } else {
                         task.resume(null)
