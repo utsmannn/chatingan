@@ -6,8 +6,6 @@ import com.utsman.chatingan.sdk.data.entity.Chat
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
-import com.utsman.chatingan.sdk.storage.MessageChatStorage
-import com.utsman.chatingan.sdk.storage.ContactStorage
 
 interface Chatingan {
     val config: ChatinganConfig

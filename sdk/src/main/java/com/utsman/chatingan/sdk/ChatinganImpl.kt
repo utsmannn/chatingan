@@ -16,20 +16,16 @@ import com.utsman.chatingan.sdk.data.entity.Chat
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
-import com.utsman.chatingan.sdk.data.store.ChatInfoStore
 import com.utsman.chatingan.sdk.data.store.ContactStore
 import com.utsman.chatingan.sdk.data.store.MessageChatStore
 import com.utsman.chatingan.sdk.services.FirebaseServices
-import com.utsman.chatingan.sdk.storage.ChatInfoStorage
-import com.utsman.chatingan.sdk.storage.MessageChatStorage
-import com.utsman.chatingan.sdk.storage.ContactStorage
+import com.utsman.chatingan.sdk.database.ChatInfoDatabase
+import com.utsman.chatingan.sdk.database.ContactDatabase
+import com.utsman.chatingan.sdk.database.MessageChatDatabase
 import com.utsman.chatingan.sdk.utils.DividerCalculator
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -54,14 +50,14 @@ internal class ChatinganImpl(
     private val firebaseServices: FirebaseServices
         get() = FirebaseServices.instance(config)
 
-    private val contactStorage: ContactStorage
-        get() = ContactStorage()
+    private val contactDatabase: ContactDatabase
+        get() = ContactDatabase()
 
-    private val chatInfoStorage: ChatInfoStorage
-        get() = ChatInfoStorage()
+    private val chatInfoDatabase: ChatInfoDatabase
+        get() = ChatInfoDatabase()
 
-    private val chatInfoIdFinder: ChatInfoStorage.IdFinder
-        get() = ChatInfoStorage.IdFinder(config)
+    private val chatInfoIdFinder: ChatInfoDatabase.IdFinder
+        get() = ChatInfoDatabase.IdFinder(config)
 
     override suspend fun updateFcm(fcmToken: String): FlowEvent<String> {
         val currentContact = config.contact
@@ -80,11 +76,11 @@ internal class ChatinganImpl(
     override suspend fun addMeContact(contact: Contact): FlowEvent<Contact> {
         val fcmToken = config.fcmToken
         val contactStore = ContactStore.fromContact(contact, fcmToken)
-        return contactStorage.addItem(contactStore, contact.id)
+        return contactDatabase.addItem(contactStore, contact.id)
     }
 
     override suspend fun getContacts(): FlowEvent<List<Contact>> {
-        return contactStorage.listenItem().filterFlow { it.id != config.contact.id }
+        return contactDatabase.listenItem().filterFlow { it.id != config.contact.id }
     }
 
     override suspend fun sendMessage(
@@ -92,16 +88,10 @@ internal class ChatinganImpl(
         messageChat: MessageChat,
         chatInfo: ChatInfo?
     ): FlowEvent<MessageChat> {
-        val messageRequest = FirebaseMessageRequest.createFromMessage(
-            messageChat = messageChat,
-            title = contact.name,
-            token = contact.name
-        )
-
         val pathId = chatInfoIdFinder.getForContact(contact) ?: UUID.randomUUID().toString()
-        val messageChatStorage = MessageChatStorage(pathId)
+        val messageChatDatabase = MessageChatDatabase(pathId)
 
-        val currentChatInfo = chatInfoStorage.findItemById(pathId)
+        val currentChatInfo = chatInfoDatabase.findItemById(pathId)
 
         val currentChatInfoId = currentChatInfo?.id
 
@@ -114,16 +104,24 @@ internal class ChatinganImpl(
 
         val messageChatStore = messageChat.toStore()
 
-        return firebaseServices.sendMessage(messageRequest)
-            .asFlowEvent()
+        return contactDatabase.findItemStoreByIdFlow(contact.id)
             .flatMapMerge {
-                chatInfoStorage.addItem(newChatInfo.toStore(), newChatInfo.id, isMerge = true)
+                val messageRequest = FirebaseMessageRequest.createFromMessage(
+                    messageChat = messageChat,
+                    title = contact.name,
+                    token = it.invoke()?.token.orEmpty()
+                )
+                firebaseServices.sendMessage(messageRequest)
+                    .asFlowEvent()
                     .flatMapMerge {
-                        messageChatStorage.addItem(
-                            messageChatStore,
-                            messageChatStore.id,
-                            isMerge = false
-                        )
+                        chatInfoDatabase.addItem(newChatInfo.toStore(), newChatInfo.id, isMerge = true)
+                            .flatMapMerge {
+                                messageChatDatabase.addItem(
+                                    messageChatStore,
+                                    messageChatStore.id,
+                                    isMerge = false
+                                )
+                            }
                     }
             }
             .stateIn(IOScope())
@@ -144,8 +142,8 @@ internal class ChatinganImpl(
 
     override suspend fun getMessages(contact: Contact): FlowEvent<List<MessageChat>> {
         val pathId = chatInfoIdFinder.getForContact(contact) ?: return emptyStateEvent()
-        val messageChatStorage = MessageChatStorage(pathId)
-        return messageChatStorage.listenItem().debounce(500).stateIn(IOScope())
+        val messageChatDatabase = MessageChatDatabase(pathId)
+        return messageChatDatabase.listenItem().debounce(500).stateIn(IOScope())
     }
 
     override suspend fun getChat(contact: Contact): FlowEvent<Chat> {
@@ -153,23 +151,22 @@ internal class ChatinganImpl(
         return chatInfoIdFinder.listenForContact(contact)
             .map {
                 it.map { pathId ->
-                    chatInfo = chatInfoStorage.findItemById(pathId) ?: ChatInfo()
-                    MessageChatStorage(pathId)
+                    chatInfo = chatInfoDatabase.findItemById(pathId) ?: ChatInfo()
+                    MessageChatDatabase(pathId)
                 }
 
             }.flatMapMerge {
                 val storage = it.invoke()
                 storage?.listenItem() ?: emptyStateEvent()
             }
-            .debounce(1000)
-            .distinctUntilChangedBy { it.invoke().toString() }
+            .debounce(500)
             .map {
                 it.map { messages ->
-                    //val newMessages = DividerCalculator.calculateDividerChat(messages)
+                    val newMessages = DividerCalculator.calculateDividerChat(messages)
                     Chat(
                         id = chatInfo.id,
                         contact = contact,
-                        messages = messages,
+                        messages = newMessages,
                         chatInfo = chatInfo
                     )
                 }
@@ -186,21 +183,21 @@ internal class ChatinganImpl(
     }
 
     override suspend fun getChatInfos(): FlowEvent<List<ChatInfo>> {
-        return chatInfoStorage.listenItem()
+        return chatInfoDatabase.listenItem()
     }
 
     override suspend fun getChatInfo(contact: Contact): FlowEvent<ChatInfo> {
-        val id = chatInfoStorage.path()
-        return chatInfoStorage.findItemByIdFlow(id).stateIn(IOScope())
+        val id = chatInfoDatabase.path()
+        return chatInfoDatabase.findItemByIdFlow(id).stateIn(IOScope())
     }
 
     override suspend fun getContact(id: String): FlowEvent<Contact> {
-        return contactStorage.findItemByIdFlow(id).stateIn(IOScope())
+        return contactDatabase.findItemByIdFlow(id).stateIn(IOScope())
     }
 
     @Suppress("LABEL_NAME_CLASH")
     override suspend fun getChats(): FlowEvent<List<Chat>> {
-        return chatInfoStorage.listenItem()
+        return chatInfoDatabase.listenItem()
             .map { state ->
                 state.map { infos ->
                     infos
@@ -210,7 +207,7 @@ internal class ChatinganImpl(
                         .map { info ->
                             val member = info.memberIds
                                 .find { it != config.contact.id } ?: return@map null
-                            val contact = contactStorage.findItemById(member) ?: return@map null
+                            val contact = contactDatabase.findItemById(member) ?: return@map null
                             Chat(
                                 id = info.id,
                                 contact = contact,
@@ -237,25 +234,31 @@ internal class ChatinganImpl(
             .stateIn(IOScope())
     }
 
-    private suspend fun markChatInfoRead(pathId: String, messageChat: MessageChat): FlowEvent<ChatInfo> {
-        val currentChatInfo = chatInfoStorage.findItemById(pathId) ?: return emptyStateEvent()
+    private suspend fun markChatInfoRead(
+        pathId: String,
+        messageChat: MessageChat
+    ): FlowEvent<ChatInfo> {
+        val currentChatInfo = chatInfoDatabase.findItemById(pathId) ?: return emptyStateEvent()
         return if (messageChat.id == currentChatInfo.lastMessage.id) {
             currentChatInfo.lastMessage = messageChat
-            chatInfoStorage.addItem(currentChatInfo.toStore(), pathId, isMerge = false)
+            chatInfoDatabase.addItem(currentChatInfo.toStore(), pathId, isMerge = false)
         } else {
             errorStateEvent("Chat Info is Empty")
         }.debounce(500).stateIn(IOScope())
     }
 
-    override suspend fun markChatRead(chatInfo: ChatInfo, messageChat: MessageChat): FlowEvent<ChatInfo> {
+    override suspend fun markChatRead(
+        chatInfo: ChatInfo,
+        messageChat: MessageChat
+    ): FlowEvent<ChatInfo> {
         val contactMe = config.contact
         if (messageChat.readByIds.contains(contactMe.id)) return emptyStateEvent()
         if (messageChat.readByIds.size == 2) return emptyStateEvent()
 
-        val messageChatStorage = MessageChatStorage(chatInfo.id)
+        val messageChatDatabase = MessageChatDatabase(chatInfo.id)
         val messageChatStore = messageChat.toStore()
         messageChatStore.readByIds = (messageChat.readByIds + contactMe.id).sorted()
-        return messageChatStorage.addItem(messageChatStore, messageChat.id, isMerge = true)
+        return messageChatDatabase.addItem(messageChatStore, messageChat.id, isMerge = true)
             .flatMapMerge {
                 markChatInfoRead(chatInfo.id, messageChatStore.toMessageChat())
             }.stateIn(IOScope())

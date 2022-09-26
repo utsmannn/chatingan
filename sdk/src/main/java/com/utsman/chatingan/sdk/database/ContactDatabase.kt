@@ -1,10 +1,9 @@
-package com.utsman.chatingan.sdk.storage
+package com.utsman.chatingan.sdk.database
 
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.store.ContactStore
-import java.util.*
 
-class ContactStorage : Storage<ContactStore, Contact>(ContactStore::class) {
+class ContactDatabase : RemoteDatabase<ContactStore, Contact>(ContactStore::class) {
 
     override fun path(): String {
         return COLLECTION_CONTACT

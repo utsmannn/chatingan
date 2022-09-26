@@ -49,6 +49,8 @@ import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.sdk.Chatingan
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
+import com.utsman.chatingan.sdk.utils.isAllRead
+import com.utsman.chatingan.sdk.utils.isFromMe
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 
@@ -105,7 +107,7 @@ fun ChatScreen(
 ) {
     val contactMe = Chatingan.getInstance().config.contact
     val lastMessage = chatInfo.lastMessage
-    val isHasRead = lastMessage.readByIds.contains(contactMe.id)
+    val isHasRead = lastMessage.isAllRead()
     val isFromMe = lastMessage.isFromMe(Chatingan.getInstance().config)
 
     Box(
@@ -180,7 +182,7 @@ fun ChatScreen(
                     .padding(end = 3.dp)
             )
 
-            val fontWeight = if (isHasRead) {
+            val fontWeight = if (isHasRead || isFromMe) {
                 FontWeight.Light
             } else {
                 FontWeight.Bold

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -71,6 +72,8 @@ import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
 import com.utsman.chatingan.sdk.utils.DateUtils
+import com.utsman.chatingan.sdk.utils.isAllRead
+import com.utsman.chatingan.sdk.utils.isFromMe
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
@@ -117,7 +120,6 @@ fun ChatScreen(
                     )
                 }
 
-
                 Box(
                     modifier = Modifier
                         .constrainAs(chatBox) {
@@ -139,12 +141,16 @@ fun ChatScreen(
                                 state = scrollState,
                                 content = {
                                     items(it.messages) { item ->
-                                        viewModel.readChat(it.chatInfo, item)
-                                        MessageItem(
-                                            messageChat = item,
-                                            contact = contact,
-                                            chatInfo = it.chatInfo
-                                        )
+                                        if (item.type == MessageChat.Type.DIVIDER) {
+                                            DividerScreen(messageChat = item)
+                                        } else {
+                                            viewModel.readChat(it.chatInfo, item)
+                                            MessageItem(
+                                                messageChat = item,
+                                                contact = contact,
+                                                chatInfo = it.chatInfo
+                                            )
+                                        }
                                     }
                                 })
                         }
@@ -241,8 +247,6 @@ fun MessageItem(
         val gh1 = createGuidelineFromStart(0.3f)
         val gh2 = createGuidelineFromEnd(0.3f)
 
-        val contactMe = Chatingan.getInstance().config.contact
-        val lastMessage = chatInfo.lastMessage
         val isHasRead = messageChat.isAllRead()
         val isFromMe = messageChat.isFromMe(Chatingan.getInstance().config)
 
@@ -270,14 +274,14 @@ fun MessageItem(
                 .constrainAs(messageBoxSender) {
                     end.linkTo(parent.end)
                 }
-                .background(Color.Magenta, shape = RoundedCornerShape(10))
+                .background(Color.Magenta, shape = RoundedCornerShape(6.dp))
 
         } else {
             Modifier
                 .constrainAs(messageBoxReceiver) {
                     start.linkTo(parent.start)
                 }
-                .background(Color.Gray, shape = RoundedCornerShape(10))
+                .background(Color.Gray, shape = RoundedCornerShape(6.dp))
         }
 
         Column(
@@ -286,7 +290,7 @@ fun MessageItem(
             ConstraintLayout(
                 modifier = messageModifier
             ) {
-                val (messageText, indicatorRow, indicatorDate) = createRefs()
+                val (messageText, indicatorRow) = createRefs()
                 Row(
                     modifier = Modifier
                         .constrainAs(indicatorRow) {
@@ -328,46 +332,6 @@ fun MessageItem(
                     }
                 }
 
-                /*val iconReadPainter = if (chatInfo.isReadFromReceiver(contact)) {
-                    IconResChatDoneAll()
-                } else {
-                    IconResChatDone()
-                }
-
-                val iconReadVisibility = if (chatInfo.isFromMe(contact)) {
-                    Visibility.Visible
-                } else {
-                    Visibility.Gone
-                }
-
-                Icon(
-                    painter = iconReadPainter,
-                    contentDescription = "",
-                    modifier = Modifier
-                        .constrainAs(indicatorRead) {
-                            end.linkTo(parent.end)
-                            top.linkTo(indicatorDate.top)
-                            bottom.linkTo(indicatorDate.bottom)
-                            visibility = iconReadVisibility
-                        }
-                        .aspectRatio(1f / 1f)
-                        .padding(end = 6.dp, bottom = 6.dp)
-                )
-
-                Text(
-                    text = DateUtils.toReadable(messageChat.lastUpdate),
-                    fontSize = 11.sp,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier
-                        .constrainAs(indicatorDate) {
-                            alpha = 0.7f
-                            end.linkTo(indicatorRead.start)
-                            bottom.linkTo(parent.bottom)
-                        }
-                        .widthIn(min = 60.dp)
-                        .padding(end = 6.dp, bottom = 6.dp),
-                )*/
-
                 Text(
                     text = messageChat.messageBody,
                     modifier = Modifier
@@ -377,8 +341,10 @@ fun MessageItem(
                             top.linkTo(parent.top)
                             bottom.linkTo(indicatorRow.top)
                         }
-                        .padding(6.dp)
+                        .widthIn(min = 60.dp)
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
                 )
+
 
             }
         }

@@ -1,4 +1,4 @@
-package com.utsman.chatingan.sdk.storage
+package com.utsman.chatingan.sdk.database
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
@@ -11,10 +11,9 @@ import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.store.ChatInfoStore
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.util.*
 import kotlin.coroutines.resume
 
-class ChatInfoStorage : Storage<ChatInfoStore, ChatInfo>(ChatInfoStore::class) {
+class ChatInfoDatabase : RemoteDatabase<ChatInfoStore, ChatInfo>(ChatInfoStore::class) {
     override fun path(): String {
         return COLLECTION_PATH
     }

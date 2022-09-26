@@ -1,6 +1,7 @@
 package com.utsman.chatingan.sdk.data.entity
 
 import android.net.Uri
+import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.utsman.chatingan.sdk.data.config.ChatinganConfig
@@ -36,14 +37,6 @@ data class MessageChat(
             readByIds = readByIds,
             lastUpdate = lastUpdate
         )
-    }
-
-    fun isFromMe(config: ChatinganConfig): Boolean {
-        return senderId == config.contact.id
-    }
-
-    fun isAllRead(): Boolean {
-        return readByIds.contains(senderId) and readByIds.contains(receiverId)
     }
 
     enum class Type {

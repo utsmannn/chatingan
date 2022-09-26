@@ -1,4 +1,4 @@
-package com.utsman.chatingan.sdk.storage
+package com.utsman.chatingan.sdk.database
 
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -20,7 +20,7 @@ import java.util.*
 import kotlin.coroutines.resume
 import kotlin.reflect.KClass
 
-abstract class Storage<T : Store, U : Entity>(private val storeClass: KClass<T>) {
+abstract class RemoteDatabase<T : Store, U : Entity>(private val storeClass: KClass<T>) {
     private val firebaseFirestore: FirebaseFirestore by lazy {
         Firebase.firestore
     }
