@@ -13,7 +13,6 @@ class ChatInfoStore(
     var id: String = "",
     var lastMessage: MessageChat = MessageChat(),
     var memberIds: List<String> = emptyList(),
-    var readByIds: List<String> = emptyList(),
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Store {
     override fun toJson(): String {
@@ -30,8 +29,7 @@ class ChatInfoStore(
             id = id,
             lastMessage = lastMessage,
             lastUpdate = lastUpdate,
-            memberIds = memberIds,
-            readByIds = readByIds
+            memberIds = memberIds
         )
     }
 }

@@ -46,6 +46,7 @@ import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
 import com.utsman.chatingan.home.R
 import com.utsman.chatingan.navigation.NavigationProvider
+import com.utsman.chatingan.sdk.Chatingan
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import org.koin.androidx.compose.get
@@ -102,6 +103,11 @@ fun ChatScreen(
     chatInfo: ChatInfo,
     onClick: (Contact) -> Unit
 ) {
+    val contactMe = Chatingan.getInstance().config.contact
+    val lastMessage = chatInfo.lastMessage
+    val isHasRead = lastMessage.readByIds.contains(contactMe.id)
+    val isFromMe = lastMessage.isFromMe(Chatingan.getInstance().config)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -147,13 +153,13 @@ fun ChatScreen(
                     }
             )
 
-            val iconReadPainter = if (chatInfo.isReadFromReceiver(contact)) {
+            val iconReadPainter = if (isHasRead) {
                 IconResChatDoneAll()
             } else {
                 IconResChatDone()
             }
 
-            val iconReadVisibility = if (chatInfo.isFromMe(contact)) {
+            val iconReadVisibility = if (isFromMe) {
                 Visibility.Visible
             } else {
                 Visibility.Gone
@@ -174,12 +180,18 @@ fun ChatScreen(
                     .padding(end = 3.dp)
             )
 
+            val fontWeight = if (isHasRead) {
+                FontWeight.Light
+            } else {
+                FontWeight.Bold
+            }
+
             Text(
                 text = chatInfo.lastMessage.messageBody,
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontWeight = if (chatInfo.isNotRead(contact)) FontWeight.Bold else FontWeight.Light,
+                fontWeight = fontWeight,
                 modifier = Modifier
                     .constrainAs(textMessage) {
                         start.linkTo(iconRead.end)

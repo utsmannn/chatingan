@@ -30,7 +30,7 @@ interface Chatingan {
     suspend fun getContact(id: String): FlowEvent<Contact>
 
     suspend fun getChats(): FlowEvent<List<Chat>>
-    suspend fun markChatRead(contact: Contact, messageId: String): FlowEvent<ChatInfo>
+    suspend fun markChatRead(chatInfo: ChatInfo, messageChat: MessageChat): FlowEvent<ChatInfo>
 
     companion object {
         @Volatile

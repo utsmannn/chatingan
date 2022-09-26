@@ -14,6 +14,7 @@ data class MessageChatStore(
     var senderId: String = "",
     var receiverId: String = "",
     var messageBody: String = "",
+    var readByIds: List<String> = emptyList(),
     @ServerTimestamp
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Store {
@@ -24,7 +25,8 @@ data class MessageChatStore(
             senderId = senderId,
             receiverId = receiverId,
             messageBody = messageBody,
-            lastUpdate = lastUpdate
+            lastUpdate = lastUpdate,
+            readByIds = readByIds
         )
     }
 
@@ -35,7 +37,8 @@ data class MessageChatStore(
                 senderId = senderId,
                 receiverId = receiverId,
                 messageBody = message,
-                lastUpdate = date
+                lastUpdate = date,
+                readByIds = listOf(senderId)
             )
         }
     }

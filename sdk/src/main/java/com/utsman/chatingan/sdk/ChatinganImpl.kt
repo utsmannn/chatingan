@@ -26,6 +26,8 @@ import com.utsman.chatingan.sdk.storage.ContactStorage
 import com.utsman.chatingan.sdk.utils.DividerCalculator
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapMerge
@@ -107,7 +109,6 @@ internal class ChatinganImpl(
             id = currentChatInfoId ?: pathId,
             lastMessage = messageChat,
             memberIds = listOf(messageChat.senderId, messageChat.receiverId).sorted(),
-            readByIds = listOf(messageChat.senderId),
             lastUpdate = messageChat.lastUpdate
         )
 
@@ -160,14 +161,15 @@ internal class ChatinganImpl(
                 val storage = it.invoke()
                 storage?.listenItem() ?: emptyStateEvent()
             }
-            .debounce(500)
+            .debounce(1000)
+            .distinctUntilChangedBy { it.invoke().toString() }
             .map {
                 it.map { messages ->
-                    val newMessages = DividerCalculator.calculateDividerChat(messages)
+                    //val newMessages = DividerCalculator.calculateDividerChat(messages)
                     Chat(
                         id = chatInfo.id,
                         contact = contact,
-                        messages = newMessages,
+                        messages = messages,
                         chatInfo = chatInfo
                     )
                 }
@@ -235,20 +237,27 @@ internal class ChatinganImpl(
             .stateIn(IOScope())
     }
 
-    override suspend fun markChatRead(contact: Contact, messageId: String): FlowEvent<ChatInfo> {
-        val pathId = chatInfoIdFinder.getForContact(contact) ?: UUID.randomUUID().toString()
+    private suspend fun markChatInfoRead(pathId: String, messageChat: MessageChat): FlowEvent<ChatInfo> {
         val currentChatInfo = chatInfoStorage.findItemById(pathId) ?: return emptyStateEvent()
-        return if (messageId == currentChatInfo.lastMessage.id) {
-            val currentLastReadIds = currentChatInfo.readByIds
-            val newLastReadIds = if (!currentLastReadIds.contains(config.contact.id)) {
-                currentLastReadIds + config.contact.id
-            } else {
-                currentLastReadIds
-            }
-            currentChatInfo.readByIds = newLastReadIds.sorted()
-            chatInfoStorage.addItem(currentChatInfo.toStore(), pathId, isMerge = true)
+        return if (messageChat.id == currentChatInfo.lastMessage.id) {
+            currentChatInfo.lastMessage = messageChat
+            chatInfoStorage.addItem(currentChatInfo.toStore(), pathId, isMerge = false)
         } else {
             errorStateEvent("Chat Info is Empty")
         }.debounce(500).stateIn(IOScope())
+    }
+
+    override suspend fun markChatRead(chatInfo: ChatInfo, messageChat: MessageChat): FlowEvent<ChatInfo> {
+        val contactMe = config.contact
+        if (messageChat.readByIds.contains(contactMe.id)) return emptyStateEvent()
+        if (messageChat.readByIds.size == 2) return emptyStateEvent()
+
+        val messageChatStorage = MessageChatStorage(chatInfo.id)
+        val messageChatStore = messageChat.toStore()
+        messageChatStore.readByIds = (messageChat.readByIds + contactMe.id).sorted()
+        return messageChatStorage.addItem(messageChatStore, messageChat.id, isMerge = true)
+            .flatMapMerge {
+                markChatInfoRead(chatInfo.id, messageChatStore.toMessageChat())
+            }.stateIn(IOScope())
     }
 }

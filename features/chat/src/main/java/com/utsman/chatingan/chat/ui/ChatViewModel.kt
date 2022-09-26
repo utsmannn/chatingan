@@ -7,6 +7,7 @@ import com.utsman.chatingan.common.koin.KoinInjector
 import com.utsman.chatingan.navigation.RouteViewModel
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
+import com.utsman.chatingan.sdk.data.entity.MessageChat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -21,9 +22,9 @@ class ChatViewModel(
         repository.getChat(contact)
     }
 
-    fun readChat(contact: Contact, messageId: String) = viewModelScope.launch {
+    fun readChat(chatInfo: ChatInfo, messageChat: MessageChat) = viewModelScope.launch {
         delay(500)
-        repository.readChat(contact, messageId)
+        repository.readChat(chatInfo, messageChat)
     }
 
     fun sendMessage(contact: Contact, message: String, chatInfo: ChatInfo?) = viewModelScope.launch {

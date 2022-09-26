@@ -2,10 +2,12 @@ package com.utsman.chatingan.chat.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -63,6 +66,7 @@ import com.utsman.chatingan.common.ui.component.Gray50
 import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
 import com.utsman.chatingan.navigation.NavigationProvider
+import com.utsman.chatingan.sdk.Chatingan
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
@@ -94,49 +98,57 @@ fun ChatScreen(
             )
         },
         content = {
-            Column {
-                chatState.defaultCompose()
-                    .doOnSuccess {
-                        chatInfo = it.chatInfo
+            ConstraintLayout(modifier = Modifier.fillMaxSize()) {
+                val (chatBox, inputBox) = createRefs()
 
-                        scope.launch {
-                            scrollState.scrollToItem(it.messages.size)
+                Box(
+                    modifier = Modifier
+                        .constrainAs(inputBox) {
+                            bottom.linkTo(parent.bottom)
+                            end.linkTo(parent.end)
+                            start.linkTo(parent.start)
+                            height = Dimension.wrapContent
                         }
-                        LazyColumn(
-                            modifier = Modifier.weight(10f),
-                            state = scrollState,
-                            content = {
-                                itemsIndexed(it.messages) { index, item ->
-                                    if (item.type == MessageChat.Type.DIVIDER) {
-                                        DividerScreen(messageChat = item)
-                                    } else {
-                                        val isLastIndex = index == it.messages.lastIndex
-                                        if (isLastIndex) {
-                                            viewModel.readChat(contact, item.id)
-                                        }
-                                        MessageItem(messageChat = item, contact = contact, chatInfo = it.chatInfo)
+                ) {
+                    BottomBarChat(
+                        onSend = {
+                            viewModel.sendMessage(contact, it, chatInfo)
+                        }
+                    )
+                }
+
+
+                Box(
+                    modifier = Modifier
+                        .constrainAs(chatBox) {
+                            top.linkTo(parent.top)
+                            bottom.linkTo(inputBox.top)
+                            start.linkTo(parent.start)
+                            end.linkTo(parent.end)
+                            height = Dimension.fillToConstraints
+                        }
+                ) {
+                    chatState.defaultCompose()
+                        .doOnSuccess {
+                            chatInfo = it.chatInfo
+                            scope.launch {
+                                scrollState.scrollToItem(it.messages.size)
+                            }
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                state = scrollState,
+                                content = {
+                                    items(it.messages) { item ->
+                                        viewModel.readChat(it.chatInfo, item)
+                                        MessageItem(
+                                            messageChat = item,
+                                            contact = contact,
+                                            chatInfo = it.chatInfo
+                                        )
                                     }
-                                }
-                            })
-                    }.doOnLoading {
-                        LoadingScreen(
-                            modifier = Modifier
-                                .weight(10f)
-                                .fillMaxWidth()
-                        )
-                    }.doOnFailure {
-                        Text(text = it.message.orEmpty())
-                    }.doOnEmpty {
-                        Column(modifier = Modifier.weight(10f)) {
-                            EmptyScreen()
+                                })
                         }
-                    }
-
-                BottomBarChat(
-                    onSend = {
-                        viewModel.sendMessage(contact, it, chatInfo)
-                    }
-                )
+                }
             }
         }
     )
@@ -219,8 +231,6 @@ fun MessageItem(
     contact: Contact,
     chatInfo: ChatInfo
 ) {
-    val isFromMe = messageChat.senderId != contact.id
-
     ConstraintLayout(
         modifier = Modifier
             .fillMaxWidth()
@@ -230,6 +240,11 @@ fun MessageItem(
         val (boxSender, boxReceiver, messageBoxSender, messageBoxReceiver) = createRefs()
         val gh1 = createGuidelineFromStart(0.3f)
         val gh2 = createGuidelineFromEnd(0.3f)
+
+        val contactMe = Chatingan.getInstance().config.contact
+        val lastMessage = chatInfo.lastMessage
+        val isHasRead = messageChat.isAllRead()
+        val isFromMe = messageChat.isFromMe(Chatingan.getInstance().config)
 
         val containerModifier = if (isFromMe) {
             Modifier
@@ -291,14 +306,13 @@ fun MessageItem(
                     )
 
                     if (isFromMe) {
-                        val isLastMessage = chatInfo.lastMessage.id == messageChat.id
-                        val iconReadPainter = if (!chatInfo.isReadFromReceiver(contact) && isLastMessage) {
-                            IconResChatDone()
-                        } else {
+                        val iconReadPainter = if (isHasRead) {
                             IconResChatDoneAll()
+                        } else {
+                            IconResChatDone()
                         }
 
-                        val sizeVisibility = if (chatInfo.isFromMe(contact)) {
+                        val sizeVisibility = if (isFromMe) {
                             16.dp
                         } else {
                             0.dp

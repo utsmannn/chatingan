@@ -3,6 +3,7 @@ package com.utsman.chatingan.sdk.data.entity
 import android.net.Uri
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.utsman.chatingan.sdk.data.config.ChatinganConfig
 import com.utsman.chatingan.sdk.data.store.MessageChatStore
 import com.utsman.chatingan.sdk.data.contract.Entity
 import java.time.Instant
@@ -13,6 +14,7 @@ data class MessageChat(
     var senderId: String = "",
     var receiverId: String = "",
     var messageBody: String = "",
+    var readByIds: List<String> = emptyList(),
     var type: Type = Type.MESSAGE,
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Entity {
@@ -27,8 +29,21 @@ data class MessageChat(
 
     internal fun toStore(): MessageChatStore {
         return MessageChatStore(
-            id, senderId, receiverId, messageBody, lastUpdate
+            id = id,
+            senderId = senderId,
+            receiverId = receiverId,
+            messageBody = messageBody,
+            readByIds = readByIds,
+            lastUpdate = lastUpdate
         )
+    }
+
+    fun isFromMe(config: ChatinganConfig): Boolean {
+        return senderId == config.contact.id
+    }
+
+    fun isAllRead(): Boolean {
+        return readByIds.contains(senderId) and readByIds.contains(receiverId)
     }
 
     enum class Type {
