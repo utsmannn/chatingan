@@ -9,7 +9,6 @@ import com.utsman.chatingan.common.event.errorStateEvent
 import com.utsman.chatingan.common.event.filterFlow
 import com.utsman.chatingan.common.event.invoke
 import com.utsman.chatingan.common.event.map
-import com.utsman.chatingan.network.asFlowEvent
 import com.utsman.chatingan.sdk.data.FirebaseMessageRequest
 import com.utsman.chatingan.sdk.data.config.ChatinganConfig
 import com.utsman.chatingan.sdk.data.entity.Chat
@@ -18,18 +17,21 @@ import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
 import com.utsman.chatingan.sdk.data.store.ContactStore
 import com.utsman.chatingan.sdk.data.store.MessageChatStore
-import com.utsman.chatingan.sdk.services.FirebaseServices
 import com.utsman.chatingan.sdk.database.ChatInfoDatabase
 import com.utsman.chatingan.sdk.database.ContactDatabase
 import com.utsman.chatingan.sdk.database.MessageChatDatabase
+import com.utsman.chatingan.sdk.services.FirebaseServices
 import com.utsman.chatingan.sdk.utils.DividerCalculator
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import java.time.Instant
 import java.util.*
 
@@ -42,6 +44,10 @@ internal class ChatinganImpl(
         IOScope().launch {
             addMeContact(config.contact)
         }
+    }
+
+    private val coroutineExceptionHandler = CoroutineExceptionHandler{_, throwable ->
+        throwable.printStackTrace()
     }
 
     override val config: ChatinganConfig
@@ -64,9 +70,7 @@ internal class ChatinganImpl(
         return if (currentContact.id.isNotEmpty()) {
             addMeContact(currentContact)
                 .map { state ->
-                    state.map {
-                        fcmToken
-                    }
+                    state.map { fcmToken }
                 }.stateIn(IOScope())
         } else {
             defaultStateEvent()
@@ -94,11 +98,13 @@ internal class ChatinganImpl(
         val currentChatInfo = chatInfoDatabase.findItemById(pathId)
 
         val currentChatInfoId = currentChatInfo?.id
+        val currentUnread = currentChatInfo?.unread ?: 0
 
         val newChatInfo = ChatInfo(
             id = currentChatInfoId ?: pathId,
             lastMessage = messageChat,
             memberIds = listOf(messageChat.senderId, messageChat.receiverId).sorted(),
+            unread = currentUnread + 1,
             lastUpdate = messageChat.lastUpdate
         )
 
@@ -111,20 +117,23 @@ internal class ChatinganImpl(
                     title = contact.name,
                     token = it.invoke()?.token.orEmpty()
                 )
-                firebaseServices.sendMessage(messageRequest)
-                    .asFlowEvent()
+                chatInfoDatabase.addItem(newChatInfo.toStore(), newChatInfo.id, isMerge = true)
+                    .onCompletion {
+                        try {
+                            firebaseServices.sendMessage(messageRequest)
+                        } catch (e: Throwable) {
+                            e.printStackTrace()
+                        }
+                    }
                     .flatMapMerge {
-                        chatInfoDatabase.addItem(newChatInfo.toStore(), newChatInfo.id, isMerge = true)
-                            .flatMapMerge {
-                                messageChatDatabase.addItem(
-                                    messageChatStore,
-                                    messageChatStore.id,
-                                    isMerge = false
-                                )
-                            }
+                        messageChatDatabase.addItem(
+                            messageChatStore,
+                            messageChatStore.id,
+                            isMerge = false
+                        )
                     }
             }
-            .stateIn(IOScope())
+            .stateIn(IOScope() + coroutineExceptionHandler)
     }
 
     override suspend fun createMessageChat(
@@ -241,6 +250,7 @@ internal class ChatinganImpl(
         val currentChatInfo = chatInfoDatabase.findItemById(pathId) ?: return emptyStateEvent()
         return if (messageChat.id == currentChatInfo.lastMessage.id) {
             currentChatInfo.lastMessage = messageChat
+            currentChatInfo.unread = 0
             chatInfoDatabase.addItem(currentChatInfo.toStore(), pathId, isMerge = false)
         } else {
             errorStateEvent("Chat Info is Empty")

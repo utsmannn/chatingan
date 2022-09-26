@@ -7,7 +7,7 @@ import java.text.SimpleDateFormat
 @SuppressLint("SimpleDateFormat")
 object DividerCalculator {
 
-    private val sdfDay = SimpleDateFormat("DD")
+    internal val sdfDay = SimpleDateFormat("DD")
     private val sdfDate = SimpleDateFormat("EEE dd/MMM/yyyy")
     private val nowDay by lazy {
         sdfDay.format(System.currentTimeMillis()).toInt()
@@ -35,14 +35,6 @@ object DividerCalculator {
                     }
                 }
 
-                /*val chatDivider = chatItem {
-                    id = newIdDivider
-                    divider = true
-                    message = messageDivider
-                    time = item.time
-                }.apply {
-                    rowChatType = RowChatType.DIVIDER
-                }*/
                 val chatDivider = MessageChat(
                     id = newIdDivider,
                     messageBody = messageDivider,

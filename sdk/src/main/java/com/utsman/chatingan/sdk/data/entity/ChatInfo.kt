@@ -13,12 +13,13 @@ data class ChatInfo(
     var id: String = "",
     var lastMessage: MessageChat = MessageChat(),
     var memberIds: List<String> = emptyList(),
+    var unread: Int = 0,
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Entity, JsonParcelize {
 
     fun toStore(): ChatInfoStore {
         return ChatInfoStore(
-            id, lastMessage, memberIds, lastUpdate
+            id, lastMessage, memberIds, unread, lastUpdate
         )
     }
 
