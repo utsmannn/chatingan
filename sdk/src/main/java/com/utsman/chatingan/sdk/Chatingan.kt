@@ -30,6 +30,8 @@ interface Chatingan {
     suspend fun getChats(): FlowEvent<List<Chat>>
     suspend fun markChatRead(chatInfo: ChatInfo, messageChat: MessageChat): FlowEvent<ChatInfo>
 
+    suspend fun exceptionListener(throwable: (Throwable?) -> Unit)
+
     companion object {
         @Volatile
         private var instance: Chatingan? = null

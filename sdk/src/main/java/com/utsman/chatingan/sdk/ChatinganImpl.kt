@@ -23,12 +23,12 @@ import com.utsman.chatingan.sdk.database.MessageChatDatabase
 import com.utsman.chatingan.sdk.services.FirebaseServices
 import com.utsman.chatingan.sdk.utils.DividerCalculator
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
@@ -46,9 +46,12 @@ internal class ChatinganImpl(
         }
     }
 
-    private val coroutineExceptionHandler = CoroutineExceptionHandler{_, throwable ->
+    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         throwable.printStackTrace()
+        flowException.value = throwable
     }
+
+    private val flowException: MutableStateFlow<Throwable?> = MutableStateFlow(null)
 
     override val config: ChatinganConfig
         get() = _config ?: throw IllegalStateException("Chatingan not initialized!")
@@ -117,14 +120,10 @@ internal class ChatinganImpl(
                     title = contact.name,
                     token = it.invoke()?.token.orEmpty()
                 )
+                (IOScope() + coroutineExceptionHandler).launch {
+                    sendFcm(messageRequest)
+                }
                 chatInfoDatabase.addItem(newChatInfo.toStore(), newChatInfo.id, isMerge = true)
-                    .onCompletion {
-                        try {
-                            firebaseServices.sendMessage(messageRequest)
-                        } catch (e: Throwable) {
-                            e.printStackTrace()
-                        }
-                    }
                     .flatMapMerge {
                         messageChatDatabase.addItem(
                             messageChatStore,
@@ -133,7 +132,7 @@ internal class ChatinganImpl(
                         )
                     }
             }
-            .stateIn(IOScope() + coroutineExceptionHandler)
+            .stateIn(IOScope())
     }
 
     override suspend fun createMessageChat(
@@ -272,5 +271,19 @@ internal class ChatinganImpl(
             .flatMapMerge {
                 markChatInfoRead(chatInfo.id, messageChatStore.toMessageChat())
             }.stateIn(IOScope())
+    }
+
+    override suspend fun exceptionListener(throwable: (Throwable?) -> Unit) {
+        flowException.collect {
+            throwable.invoke(it)
+        }
+    }
+
+    private suspend fun sendFcm(messageRequest: FirebaseMessageRequest) {
+        try {
+            firebaseServices.sendMessage(messageRequest)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
     }
 }
