@@ -187,7 +187,8 @@ inline fun <reified T> StateEvent<T>.doOnEmpty(failure: () -> Unit): StateEvent<
 
 @Composable
 inline fun <reified T> StateEvent<T>.defaultCompose(): StateEvent<T> {
-    return doOnFailure { FailureScreen(message = it.message.orEmpty()) }
+    return this
+        .doOnFailure { FailureScreen(message = it.message.orEmpty()) }
         .doOnLoading { LoadingScreen() }
         .doOnEmpty { EmptyScreen() }
 }

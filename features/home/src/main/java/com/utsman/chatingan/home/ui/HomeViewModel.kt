@@ -23,7 +23,6 @@ class HomeViewModel(
 
     init {
         viewModelScope.launch {
-            //homeRepository.getContacts()
             homeRepository.getChats()
         }
     }

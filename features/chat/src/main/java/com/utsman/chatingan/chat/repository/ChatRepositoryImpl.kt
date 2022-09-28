@@ -28,16 +28,20 @@ class ChatRepositoryImpl : ChatRepository {
             .collect(_chatState)
     }
 
-    override suspend fun readChat(chatInfo: ChatInfo, messageChat: MessageChat) {
+    override suspend fun readChat(contact: Contact, messageChat: MessageChat) {
         val chatingan = Chatingan.getInstance()
-        chatingan.markChatRead(chatInfo, messageChat)
+        chatingan.markChatRead(contact, messageChat)
     }
 
-    override suspend fun sendMessage(contact: Contact, message: String, chatInfo: ChatInfo?) {
+    override suspend fun sendMessage(contact: Contact, message: String) {
         _message.value = loadingEventValue()
         val chatingan = Chatingan.getInstance()
         val senderId = chatingan.config.contact.id
         val messageChat = chatingan.createMessageChat(senderId, contact.id, message)
-        chatingan.sendMessage(contact, messageChat, chatInfo).collect(_message)
+        chatingan.sendMessage(contact, messageChat).collect(_message)
+    }
+
+    override suspend fun setTypingStatus(contact: Contact, isTyping: Boolean) {
+        Chatingan.getInstance().sendTypingStatus(contact, isTyping)
     }
 }

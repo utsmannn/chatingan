@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +45,7 @@ import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
+import com.utsman.chatingan.common.ui.component.ResponsiveText
 import com.utsman.chatingan.home.R
 import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.sdk.Chatingan
@@ -131,7 +133,6 @@ fun ChatScreen(
             ) = createRefs()
 
             val gv1 = createGuidelineFromStart(0.1f)
-            val gv2 = createGuidelineFromEnd(0.1f)
 
             AsyncImage(
                 model = contact.image,
@@ -156,7 +157,7 @@ fun ChatScreen(
                 modifier = Modifier
                     .constrainAs(textName) {
                         start.linkTo(gv1, margin = 12.dp)
-                        end.linkTo(gv2)
+                        end.linkTo(textDate.start, margin = 6.dp)
                         top.linkTo(parent.top)
                         width = Dimension.fillToConstraints
                     },
@@ -204,7 +205,7 @@ fun ChatScreen(
                 modifier = Modifier
                     .constrainAs(textMessage) {
                         start.linkTo(iconRead.end)
-                        end.linkTo(textName.end)
+                        end.linkTo(unreadCount.start)
                         top.linkTo(textName.bottom)
                         width = Dimension.fillToConstraints
                     }
@@ -214,35 +215,35 @@ fun ChatScreen(
             val unreadCountVisibility = if (chatInfo.unread >= 1 && !isFromMe) {
                 Visibility.Visible
             } else {
-                Visibility.Gone
+                Visibility.Invisible
             }
 
             UnreadCount(
                 modifier = Modifier
                     .constrainAs(unreadCount) {
-                        start.linkTo(gv2, margin = 6.dp)
                         end.linkTo(parent.end, margin = 6.dp)
                         top.linkTo(textName.bottom, margin = 2.dp)
                         bottom.linkTo(textMessage.bottom, margin = 2.dp)
                         visibility = unreadCountVisibility
-                        width = Dimension.fillToConstraints
+                        width = Dimension.wrapContent
                     }
                     .padding(horizontal = 3.dp)
-                    .background(Color.Red, shape = RoundedCornerShape(80)),
+                    ,
                 count = chatInfo.unread
             )
 
-            Text(
+            ResponsiveText(
                 text = DateUtils.generateDateChat(chatInfo.lastMessage.lastUpdate),
-                fontSize = 10.sp,
-                maxLines = 1,
+                textStyle = TextStyle(fontSize = 10.sp),
                 modifier = Modifier
                     .constrainAs(textDate) {
                         end.linkTo(parent.end, margin = 6.dp)
-                        start.linkTo(gv2, margin = 6.dp)
+                        start.linkTo(textName.end, margin = 6.dp)
                         top.linkTo(textName.top)
                         bottom.linkTo(textName.bottom)
-                    }
+                        width = Dimension.fillToConstraints
+                    },
+                textAlign = TextAlign.End
             )
         }
     }
@@ -253,15 +254,19 @@ fun UnreadCount(modifier: Modifier, count: Int) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.End
     ) {
         Text(
             text = count.toString(),
-            fontSize = 10.sp,
+            fontSize = 8.sp,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .background(Color.Red, shape = RoundedCornerShape(80))
+                .padding(horizontal = 3.dp)
+
         )
     }
 }

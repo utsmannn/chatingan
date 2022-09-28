@@ -11,9 +11,8 @@ interface Chatingan {
     val config: ChatinganConfig
 
     suspend fun updateFcm(fcmToken: String): FlowEvent<String>
-    suspend fun addMeContact(contact: Contact): FlowEvent<Contact>
     suspend fun getContacts(): FlowEvent<List<Contact>>
-    suspend fun sendMessage(contact: Contact, messageChat: MessageChat, chatInfo: ChatInfo?): FlowEvent<MessageChat>
+    suspend fun sendMessage(contact: Contact, messageChat: MessageChat): FlowEvent<MessageChat>
 
     suspend fun createMessageChat(
         senderId: String,
@@ -28,7 +27,8 @@ interface Chatingan {
     suspend fun getContact(id: String): FlowEvent<Contact>
 
     suspend fun getChats(): FlowEvent<List<Chat>>
-    suspend fun markChatRead(chatInfo: ChatInfo, messageChat: MessageChat): FlowEvent<ChatInfo>
+    suspend fun markChatRead(contact: Contact, messageChat: MessageChat): FlowEvent<ChatInfo>
+    suspend fun sendTypingStatus(contact: Contact, isTyping: Boolean)
 
     suspend fun exceptionListener(throwable: (Throwable?) -> Unit)
 

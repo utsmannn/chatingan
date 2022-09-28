@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Icon
@@ -84,12 +85,12 @@ fun ChatScreen(
     navigationProvider: NavigationProvider = get(),
     viewModel: ChatViewModel = getViewModel()
 ) {
-    var chatInfo: ChatInfo? = remember { null }
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
     val chatState by viewModel.chatState.collectAsState()
 
     viewModel.getChat(contact)
+    viewModel.listenForTyping(contact)
 
     Scaffold(
         topBar = {
@@ -114,8 +115,10 @@ fun ChatScreen(
                         }
                 ) {
                     BottomBarChat(
+                        contact = contact,
+                        viewModel = viewModel,
                         onSend = {
-                            viewModel.sendMessage(contact, it, chatInfo)
+                            viewModel.sendMessage(contact, it)
                         }
                     )
                 }
@@ -132,7 +135,6 @@ fun ChatScreen(
                 ) {
                     chatState.defaultCompose()
                         .doOnSuccess {
-                            chatInfo = it.chatInfo
                             scope.launch {
                                 scrollState.scrollToItem(it.messages.size)
                             }
@@ -144,12 +146,8 @@ fun ChatScreen(
                                         if (item.type == MessageChat.Type.DIVIDER) {
                                             DividerScreen(messageChat = item)
                                         } else {
-                                            viewModel.readChat(it.chatInfo, item)
-                                            MessageItem(
-                                                messageChat = item,
-                                                contact = contact,
-                                                chatInfo = it.chatInfo
-                                            )
+                                            viewModel.readChat(contact, item)
+                                            MessageItem(messageChat = item)
                                         }
                                     }
                                 })
@@ -188,11 +186,15 @@ fun TopBarChat(contact: Contact, onClick: () -> Unit) {
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BottomBarChat(
+    viewModel: ChatViewModel,
+    contact: Contact,
     onSend: (String) -> Unit
 ) {
-    var inputValue by remember { mutableStateOf("") }
+    //var inputValue by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    val text by viewModel.textState.collectAsState("")
+    val scope = rememberCoroutineScope()
 
     Row(
         modifier = Modifier
@@ -210,8 +212,10 @@ fun BottomBarChat(
             TextField(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp), value = inputValue, onValueChange = {
-                    inputValue = it
+                    .height(60.dp),
+                value = text,
+                onValueChange = {
+                    viewModel.setText(it)
                 }
             )
         }
@@ -219,11 +223,10 @@ fun BottomBarChat(
         Button(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
             onClick = {
-                onSend.invoke(inputValue)
-                inputValue = ""
+                onSend.invoke(text)
+                viewModel.setText("")
                 keyboardController?.hide()
                 focusManager.clearFocus(true)
-
             },
             content = {
                 Text(text = "send")
@@ -233,9 +236,7 @@ fun BottomBarChat(
 
 @Composable
 fun MessageItem(
-    messageChat: MessageChat,
-    contact: Contact,
-    chatInfo: ChatInfo
+    messageChat: MessageChat
 ) {
     ConstraintLayout(
         modifier = Modifier
@@ -309,17 +310,17 @@ fun MessageItem(
                         textAlign = TextAlign.End
                     )
 
+                    val sizeVisibility = if (isFromMe) {
+                        16.dp
+                    } else {
+                        0.dp
+                    }
+
                     if (isFromMe) {
                         val iconReadPainter = if (isHasRead) {
                             IconResChatDoneAll()
                         } else {
                             IconResChatDone()
-                        }
-
-                        val sizeVisibility = if (isFromMe) {
-                            16.dp
-                        } else {
-                            0.dp
                         }
 
                         Icon(

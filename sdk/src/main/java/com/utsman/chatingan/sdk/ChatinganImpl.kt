@@ -25,10 +25,11 @@ import com.utsman.chatingan.sdk.utils.DividerCalculator
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
@@ -41,9 +42,7 @@ internal class ChatinganImpl(
 ) : Chatingan {
 
     init {
-        IOScope().launch {
-            addMeContact(config.contact)
-        }
+        addMeContact(config.contact)
     }
 
     private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
@@ -80,7 +79,7 @@ internal class ChatinganImpl(
         }
     }
 
-    override suspend fun addMeContact(contact: Contact): FlowEvent<Contact> {
+    private fun addMeContact(contact: Contact): FlowEvent<Contact> {
         val fcmToken = config.fcmToken
         val contactStore = ContactStore.fromContact(contact, fcmToken)
         return contactDatabase.addItem(contactStore, contact.id)
@@ -92,8 +91,7 @@ internal class ChatinganImpl(
 
     override suspend fun sendMessage(
         contact: Contact,
-        messageChat: MessageChat,
-        chatInfo: ChatInfo?
+        messageChat: MessageChat
     ): FlowEvent<MessageChat> {
         val pathId = chatInfoIdFinder.getForContact(contact) ?: UUID.randomUUID().toString()
         val messageChatDatabase = MessageChatDatabase(pathId)
@@ -232,13 +230,16 @@ internal class ChatinganImpl(
                 it.id.isNotEmpty()
             }
             .map {
-                if (it.invoke().isNullOrEmpty()) {
-                    StateEvent.Empty()
+                if (it is StateEvent.Success) {
+                    if (it.data.isEmpty()) {
+                        StateEvent.Empty()
+                    } else {
+                        it
+                    }
                 } else {
                     it
                 }
             }
-            .debounce(500)
             .stateIn(IOScope())
     }
 
@@ -257,20 +258,29 @@ internal class ChatinganImpl(
     }
 
     override suspend fun markChatRead(
-        chatInfo: ChatInfo,
+        contact: Contact,
         messageChat: MessageChat
     ): FlowEvent<ChatInfo> {
         val contactMe = config.contact
+        val chatInfoId = chatInfoIdFinder.getForContact(contact) ?: return emptyStateEvent()
         if (messageChat.readByIds.contains(contactMe.id)) return emptyStateEvent()
         if (messageChat.readByIds.size == 2) return emptyStateEvent()
 
-        val messageChatDatabase = MessageChatDatabase(chatInfo.id)
+        val messageChatDatabase = MessageChatDatabase(chatInfoId)
         val messageChatStore = messageChat.toStore()
         messageChatStore.readByIds = (messageChat.readByIds + contactMe.id).sorted()
         return messageChatDatabase.addItem(messageChatStore, messageChat.id, isMerge = true)
             .flatMapMerge {
-                markChatInfoRead(chatInfo.id, messageChatStore.toMessageChat())
+                markChatInfoRead(chatInfoId, messageChatStore.toMessageChat())
             }.stateIn(IOScope())
+    }
+
+    override suspend fun sendTypingStatus(contact: Contact, isTyping: Boolean) {
+        val chatInfoId = chatInfoIdFinder.getForContact(contact) ?: return
+        val chatInfo = chatInfoDatabase.findItemById(chatInfoId) ?: return
+        chatInfo.isTyping = isTyping
+
+        chatInfoDatabase.addItem(chatInfo.toStore(), chatInfoId, isMerge = true)
     }
 
     override suspend fun exceptionListener(throwable: (Throwable?) -> Unit) {

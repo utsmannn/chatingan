@@ -1,6 +1,8 @@
 package com.utsman.chatingan.sdk.utils
 
+import org.ocpsoft.prettytime.PrettyTime
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.util.*
 
 object DateUtils {
@@ -11,6 +13,7 @@ object DateUtils {
     }
 
     fun generateDateChat(date: Date): String {
+        val prettyTime = PrettyTime()
         val currentDay = DividerCalculator.sdfDay.format(System.currentTimeMillis()).toInt()
         val messageToday = DividerCalculator.sdfDay.format(date.time).toInt()
 
@@ -18,11 +21,8 @@ object DateUtils {
             messageToday -> {
                 toReadable(date)
             }
-            messageToday - 1 -> {
-                "Kemarin"
-            }
             else -> {
-                toReadable(date, "dd/MMM/yyyy")
+                prettyTime.format(date)
             }
         }
 

@@ -2,7 +2,9 @@ package com.utsman.chatingan.sdk.utils
 
 import android.annotation.SuppressLint
 import com.utsman.chatingan.sdk.data.entity.MessageChat
+import org.ocpsoft.prettytime.PrettyTime
 import java.text.SimpleDateFormat
+import java.time.Instant
 
 @SuppressLint("SimpleDateFormat")
 object DividerCalculator {
@@ -14,6 +16,8 @@ object DividerCalculator {
     }
 
     fun calculateDividerChat(oldList: List<MessageChat>): MutableList<MessageChat> {
+        val prettyTime = PrettyTime()
+
         val newList: MutableList<MessageChat> = mutableListOf()
         val iterator = oldList.iterator()
         var currentDay = 0
@@ -21,19 +25,8 @@ object DividerCalculator {
             val day = sdfDay.format(item.lastUpdate).toInt()
             if (day > currentDay) {
                 val newIdDivider = "divider-$day"
-
                 currentDay = day
-                val messageDivider = when (currentDay) {
-                    nowDay -> {
-                        "Hari ini"
-                    }
-                    nowDay - 1 -> {
-                        "Kemarin"
-                    }
-                    else -> {
-                        sdfDate.format(item.lastUpdate)
-                    }
-                }
+                val messageDivider = prettyTime.format(item.lastUpdate)
 
                 val chatDivider = MessageChat(
                     id = newIdDivider,
