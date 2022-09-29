@@ -54,11 +54,7 @@ class HomeRepositoryImpl(
         Chatingan
             .getInstance()
             .getChats()
-            .collect {
-                println("ASUUUUUU -> $it")
-                _chatsState.value = it
-            }
-            //.collect(_chatsState)
+            .collect(_chatsState)
     }
 
     override suspend fun getContact(chatInfo: ChatInfo): FlowEvent<Contact> {

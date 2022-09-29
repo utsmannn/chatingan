@@ -4,6 +4,7 @@ import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.firestore.ktx.toObject
 import com.google.firebase.ktx.Firebase
 import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.event.StateEvent
@@ -137,6 +138,25 @@ abstract class RemoteDatabase<T : Store, U : Entity>(private val storeClass: KCl
             }
 
         return listState
+    }
+
+    fun listenItemById(id: String): FlowEvent<U> {
+        val itemState = loadingStateEvent<U>()
+        collection()
+            .document(id)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    itemState.value = StateEvent.Failure(error)
+                }
+                val item = value?.toObject(storeClass.java)
+
+                if (item != null) {
+                    itemState.value = StateEvent.Success(dataMapper(item))
+                } else {
+                    itemState.value = StateEvent.Empty()
+                }
+            }
+        return itemState
     }
 
     private suspend fun findItemStoreById(id: String): T? {

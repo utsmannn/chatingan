@@ -25,6 +25,7 @@ import com.utsman.chatingan.sdk.utils.DividerCalculator
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.flatMapMerge
@@ -111,26 +112,34 @@ internal class ChatinganImpl(
 
         val messageChatStore = messageChat.toStore()
 
-        return contactDatabase.findItemStoreByIdFlow(contact.id)
+        return chatInfoDatabase.addItem(newChatInfo.toStore(), newChatInfo.id, isMerge = true)
             .flatMapMerge {
+                messageChatDatabase.addItem(
+                    messageChatStore,
+                    messageChatStore.id,
+                    isMerge = false
+                )
+            }.stateIn(IOScope()).apply {
+                sendFcm(contact, messageChat)
+            }
+    }
+
+    private suspend fun sendFcm(contact: Contact, messageChat: MessageChat) {
+        contactDatabase.findItemStoreByIdFlow(contact.id)
+            .collect {
                 val messageRequest = FirebaseMessageRequest.createFromMessage(
                     messageChat = messageChat,
                     title = contact.name,
                     token = it.invoke()?.token.orEmpty()
                 )
-                (IOScope() + coroutineExceptionHandler).launch {
-                    sendFcm(messageRequest)
+
+                try {
+                    firebaseServices.sendMessage(messageRequest)
+                } catch (e: Throwable) {
+                    e.printStackTrace()
                 }
-                chatInfoDatabase.addItem(newChatInfo.toStore(), newChatInfo.id, isMerge = true)
-                    .flatMapMerge {
-                        messageChatDatabase.addItem(
-                            messageChatStore,
-                            messageChatStore.id,
-                            isMerge = false
-                        )
-                    }
+
             }
-            .stateIn(IOScope())
     }
 
     override suspend fun createMessageChat(
@@ -193,8 +202,8 @@ internal class ChatinganImpl(
     }
 
     override suspend fun getChatInfo(contact: Contact): FlowEvent<ChatInfo> {
-        val id = chatInfoDatabase.path()
-        return chatInfoDatabase.findItemByIdFlow(id).stateIn(IOScope())
+        val id = chatInfoIdFinder.getForContact(contact) ?: return emptyStateEvent()
+        return chatInfoDatabase.listenItemById(id)
     }
 
     override suspend fun getContact(id: String): FlowEvent<Contact> {
@@ -278,22 +287,21 @@ internal class ChatinganImpl(
     override suspend fun sendTypingStatus(contact: Contact, isTyping: Boolean) {
         val chatInfoId = chatInfoIdFinder.getForContact(contact) ?: return
         val chatInfo = chatInfoDatabase.findItemById(chatInfoId) ?: return
-        chatInfo.isTyping = isTyping
+        val contactMeId = config.contact.id
 
-        chatInfoDatabase.addItem(chatInfo.toStore(), chatInfoId, isMerge = true)
+        val chatInfoStore = chatInfo.toStore()
+        chatInfoStore.typingIds = if (isTyping) {
+            (chatInfo.typingIds + contactMeId).distinct()
+        } else {
+            (chatInfo.typingIds - contactMeId).distinct()
+        }
+
+        chatInfoDatabase.addItem(chatInfoStore, chatInfoId, isMerge = true)
     }
 
     override suspend fun exceptionListener(throwable: (Throwable?) -> Unit) {
         flowException.collect {
             throwable.invoke(it)
-        }
-    }
-
-    private suspend fun sendFcm(messageRequest: FirebaseMessageRequest) {
-        try {
-            firebaseServices.sendMessage(messageRequest)
-        } catch (e: Throwable) {
-            e.printStackTrace()
         }
     }
 }

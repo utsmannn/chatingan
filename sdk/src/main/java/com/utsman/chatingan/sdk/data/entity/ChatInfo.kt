@@ -14,13 +14,13 @@ data class ChatInfo(
     var lastMessage: MessageChat = MessageChat(),
     var memberIds: List<String> = emptyList(),
     var unread: Int = 0,
-    var isTyping: Boolean = false,
+    var typingIds: List<String> = emptyList(),
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Entity, JsonParcelize {
 
     fun toStore(): ChatInfoStore {
         return ChatInfoStore(
-            id, lastMessage, memberIds, unread, isTyping, lastUpdate
+            id, lastMessage, memberIds, unread, typingIds, lastUpdate
         )
     }
 

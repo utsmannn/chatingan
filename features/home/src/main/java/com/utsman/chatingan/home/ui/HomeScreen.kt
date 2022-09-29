@@ -196,8 +196,14 @@ fun ChatScreen(
                 FontWeight.Bold
             }
 
+            val subtitle = if (chatInfo.typingIds.contains(contact.id)) {
+                "Typing..."
+            } else {
+                chatInfo.lastMessage.messageBody
+            }
+
             Text(
-                text = chatInfo.lastMessage.messageBody,
+                text = subtitle,
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -265,7 +271,7 @@ fun UnreadCount(modifier: Modifier, count: Int) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .background(Color.Red, shape = RoundedCornerShape(80))
-                .padding(horizontal = 3.dp)
+                .padding(horizontal = 5.dp)
 
         )
     }
