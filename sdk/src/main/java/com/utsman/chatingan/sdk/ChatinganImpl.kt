@@ -158,7 +158,7 @@ internal class ChatinganImpl(
     override suspend fun getMessages(contact: Contact): FlowEvent<List<MessageChat>> {
         val pathId = chatInfoIdFinder.getForContact(contact) ?: return emptyStateEvent()
         val messageChatDatabase = MessageChatDatabase(pathId)
-        return messageChatDatabase.listenItem().debounce(500).stateIn(IOScope())
+        return messageChatDatabase.listenItem().stateIn(IOScope())
     }
 
     override suspend fun getChat(contact: Contact): FlowEvent<Chat> {

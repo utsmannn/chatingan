@@ -2,17 +2,20 @@ package com.utsman.chatingan.chat.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
@@ -27,23 +30,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.Button
 import androidx.compose.material.Card
-import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.contentColorFor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.primarySurface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,9 +51,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -237,7 +235,9 @@ fun TopBarChat(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class,
+    ExperimentalLayoutApi::class
+)
 @Composable
 fun BottomBarChat(
     viewModel: ChatViewModel,
@@ -249,42 +249,74 @@ fun BottomBarChat(
     val text by viewModel.textState.collectAsState("")
     val scope = rememberCoroutineScope()
 
-    Row(
+    val isKeyboardVisible by keyboardOpenAsState()
+
+    Column {
+        ConstraintLayout(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp)
+        ) {
+            val (row) = createRefs()
+
+            Row(
+                modifier = Modifier
+                    .constrainAs(row) {
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    }
+            ) {
+                Card(
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier
+                        .weight(3f)
+                        .fillMaxHeight()
+                        .padding(horizontal = 6.dp, vertical = 6.dp)
+                        .background(Color.White)
+                ) {
+                    TextField(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        value = text,
+                        onValueChange = {
+                            viewModel.setText(it)
+                        }
+                    )
+                }
+
+                Button(
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                    onClick = {
+                        onSend.invoke(text)
+                        viewModel.setText("")
+                        keyboardController?.hide()
+                        focusManager.clearFocus(true)
+                    },
+                    content = {
+                        Text(text = isKeyboardVisible.toString())
+                    })
+            }
+
+        }
+
+        EmojiKeyboard(
+            toggle = isKeyboardVisible,
+            tolerance = 60.dp,
+            onClickEmoji = {
+                viewModel.setText(text.plus(it))
+            }
+        )
+    }
+
+    /*Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(70.dp)
     ) {
-        Card(
-            shape = RoundedCornerShape(6.dp),
-            modifier = Modifier
-                .weight(3f)
-                .fillMaxHeight()
-                .padding(horizontal = 6.dp, vertical = 6.dp)
-                .background(Color.White)
-        ) {
-            TextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
-                value = text,
-                onValueChange = {
-                    viewModel.setText(it)
-                }
-            )
-        }
 
-        Button(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-            onClick = {
-                onSend.invoke(text)
-                viewModel.setText("")
-                keyboardController?.hide()
-                focusManager.clearFocus(true)
-            },
-            content = {
-                Text(text = "send")
-            })
-    }
+    }*/
 }
 
 @Composable

@@ -15,6 +15,7 @@ data class MessageChatStore(
     var receiverId: String = "",
     var messageBody: String = "",
     var readByIds: List<String> = emptyList(),
+    var type: MessageChat.Type = MessageChat.Type.TEXT,
     @ServerTimestamp
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Store {
@@ -26,6 +27,7 @@ data class MessageChatStore(
             receiverId = receiverId,
             messageBody = messageBody,
             lastUpdate = lastUpdate,
+            type = type,
             readByIds = readByIds
         )
     }
