@@ -1,10 +1,8 @@
 package com.utsman.chatingan.sdk.data.entity
 
 import android.net.Uri
-import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.utsman.chatingan.sdk.data.config.ChatinganConfig
 import com.utsman.chatingan.sdk.data.store.MessageChatStore
 import com.utsman.chatingan.sdk.data.contract.Entity
 import java.time.Instant
@@ -16,7 +14,7 @@ data class MessageChat(
     var receiverId: String = "",
     var messageBody: String = "",
     var readByIds: List<String> = emptyList(),
-    var type: Type = Type.MESSAGE,
+    var type: Type = Type.TEXT,
     var lastUpdate: Date = Date.from(Instant.now())
 ) : Entity {
     override fun toJson(): String {
@@ -35,11 +33,12 @@ data class MessageChat(
             receiverId = receiverId,
             messageBody = messageBody,
             readByIds = readByIds,
+            type = type,
             lastUpdate = lastUpdate
         )
     }
 
     enum class Type {
-        MESSAGE, DIVIDER
+        TEXT, DIVIDER, IMAGE
     }
 }
