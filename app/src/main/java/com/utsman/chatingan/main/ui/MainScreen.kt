@@ -5,9 +5,12 @@ import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,12 +25,12 @@ import com.utsman.chatingan.common.event.onSuccess
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.contact.routes.ContactRoute
 import com.utsman.chatingan.home.routes.HomeRoute
+import com.utsman.chatingan.lib.Chatingan
+import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.login.ui.LoginScreen
 import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.routes.AppRoute
-import com.utsman.chatingan.sdk.Chatingan
-import com.utsman.chatingan.sdk.data.config.ChatinganConfig
-import com.utsman.chatingan.sdk.data.entity.Contact
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 
@@ -74,6 +77,8 @@ fun SplashScreen(
 ) {
     val userState by mainViewModel.userState.collectAsState()
     val firebaseTokenState by mainViewModel.firebaseTokenState.collectAsState()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     userState
         .doOnLoading {
@@ -90,7 +95,7 @@ fun SplashScreen(
         }
         .onSuccess { user ->
             firebaseTokenState.onSuccess { token ->
-                val contactDetail = Contact.Detail(user.email)
+                /*val contactDetail = Contact.Detail(user.email)
 
                 val chatinganContact = ChatinganConfig.ChatinganContactBuilder()
                     .setId(user.id)
@@ -107,6 +112,30 @@ fun SplashScreen(
 
                 println("--- SET CHATINGAN INSTANCE ---")
                 Chatingan.initialize(chatinganConfig)
+                navigationProvider.screenOf(
+                    routeViewModel = mainViewModel,
+                    destination = HomeRoute.Home
+                )*/
+
+                val meContact = Contact.build {
+                    name = user.name
+                    email = user.email
+                    imageUrl = user.photoUrl
+                    fcmToken = token
+                }
+
+                Chatingan.initialize(context) {
+                    contact = meContact
+                    fcmToken = token
+                    fcmServerKey = AppApplication.SERVER_KEY
+                }
+
+                println("ASUUUUUU -> $token")
+
+                //val chatingan = Chatingan.getInstance()
+                //val chatinganQr = chatingan.getChatinganQr()
+                //val qrBitmap = chatinganQr.generateQrContact()
+                //ShowQr(bitmap = qrBitmap)
                 navigationProvider.screenOf(
                     routeViewModel = mainViewModel,
                     destination = HomeRoute.Home

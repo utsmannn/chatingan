@@ -11,6 +11,7 @@ import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.io.File
 
 class ChatRepositoryImpl : ChatRepository {
 
@@ -22,7 +23,6 @@ class ChatRepositoryImpl : ChatRepository {
     override val chatInfoState: FlowEvent<ChatInfo>
         get() = _chatInfoState
 
-
     private val _message = defaultStateEvent<MessageChat>()
     override val message: FlowEvent<MessageChat>
         get() = _message
@@ -30,7 +30,6 @@ class ChatRepositoryImpl : ChatRepository {
     private val _isReceiverIsTyping = MutableStateFlow(false)
     override val isReceiverIsTyping: StateFlow<Boolean>
         get() = _isReceiverIsTyping
-
 
     override suspend fun getChat(contact: Contact) {
         _chatState.value = loadingEventValue()
@@ -61,12 +60,25 @@ class ChatRepositoryImpl : ChatRepository {
     override suspend fun sendMessage(contact: Contact, message: String) {
         _message.value = loadingEventValue()
         val chatingan = Chatingan.getInstance()
-        val senderId = chatingan.config.contact.id
-        val messageChat = chatingan.createMessageChat(senderId, contact.id, message)
+        val messageChat = chatingan.createMessageTextChat(contact, message)
+        chatingan.sendMessage(contact, messageChat).collect(_message)
+    }
+
+    override suspend fun sendImage(contact: Contact, message: String, file: File) {
+        _message.value = loadingEventValue()
+        val chatingan = Chatingan.getInstance()
+        val messageChat = chatingan.createMessageImageChat(contact, message, file)
         chatingan.sendMessage(contact, messageChat).collect(_message)
     }
 
     override suspend fun setTypingStatus(contact: Contact, isTyping: Boolean) {
         Chatingan.getInstance().sendTypingStatus(contact, isTyping)
+    }
+
+    override suspend fun dispose() {
+        _chatState.value = StateEvent.Idle()
+        _chatInfoState.value = StateEvent.Idle()
+        _message.value = StateEvent.Idle()
+        _isReceiverIsTyping.value = false
     }
 }

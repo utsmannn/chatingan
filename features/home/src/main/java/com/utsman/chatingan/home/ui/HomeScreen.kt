@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -28,9 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,19 +38,15 @@ import coil.compose.AsyncImage
 import com.utsman.chatingan.common.event.defaultCompose
 import com.utsman.chatingan.common.event.onSuccess
 import com.utsman.chatingan.common.ui.clickableRipple
-import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
+import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
-import com.utsman.chatingan.common.ui.component.ResponsiveText
 import com.utsman.chatingan.home.R
+import com.utsman.chatingan.lib.Chatingan
+import com.utsman.chatingan.lib.data.model.Contact
+import com.utsman.chatingan.lib.data.model.MessageInfo
 import com.utsman.chatingan.navigation.NavigationProvider
-import com.utsman.chatingan.sdk.Chatingan
-import com.utsman.chatingan.sdk.data.entity.ChatInfo
-import com.utsman.chatingan.sdk.data.entity.Contact
-import com.utsman.chatingan.sdk.utils.DateUtils
-import com.utsman.chatingan.sdk.utils.isAllRead
-import com.utsman.chatingan.sdk.utils.isFromMe
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 
@@ -87,12 +80,11 @@ fun HomeScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         content = {
-                            items(chats) { chat ->
+                            items(chats) { messageInfo ->
                                 ChatScreen(
-                                    contact = chat.contact,
-                                    chatInfo = chat.chatInfo,
+                                    messageInfo = messageInfo,
                                     onClick = {
-                                        navigationProvider.navigateToChat(chat.contact)
+                                        navigationProvider.navigateToChat(it)
                                     }
                                 )
                             }
@@ -104,21 +96,21 @@ fun HomeScreen(
 
 @Composable
 fun ChatScreen(
-    contact: Contact,
-    chatInfo: ChatInfo,
+    messageInfo: MessageInfo,
     onClick: (Contact) -> Unit
 ) {
-    val contactMe = Chatingan.getInstance().config.contact
-    val lastMessage = chatInfo.lastMessage
-    val isHasRead = lastMessage.isAllRead()
-    val isFromMe = lastMessage.isFromMe(Chatingan.getInstance().config)
+    val contactMe = Chatingan.getInstance().getConfiguration().contact
+    //val lastMessage = chatInfo.lastMessage
+   // val isHasRead = lastMessage.isAllRead()
+    val isHasRead = true
+    val isFromMe = messageInfo.receiver.id == contactMe.id
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
             .clickableRipple {
-                onClick.invoke(contact)
+                onClick.invoke(messageInfo.receiver)
             }
     ) {
         ConstraintLayout(
@@ -135,8 +127,8 @@ fun ChatScreen(
             val gv1 = createGuidelineFromStart(0.1f)
 
             AsyncImage(
-                model = contact.image,
-                contentDescription = contact.name,
+                model = messageInfo.receiver.imageUrl,
+                contentDescription = messageInfo.receiver.name,
                 modifier = Modifier
                     .constrainAs(imageProfile) {
                         start.linkTo(parent.start)
@@ -151,7 +143,7 @@ fun ChatScreen(
             )
 
             Text(
-                text = contact.name,
+                text = messageInfo.receiver.name,
                 fontWeight = FontWeight.Bold,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -196,27 +188,47 @@ fun ChatScreen(
                 FontWeight.Bold
             }
 
-            val subtitle = if (chatInfo.typingIds.contains(contact.id)) {
-                "Typing..."
-            } else {
-                chatInfo.lastMessage.messageBody
-            }
+            val modifierBody = Modifier
+                .constrainAs(textMessage) {
+                    start.linkTo(iconRead.end)
+                    end.linkTo(unreadCount.start)
+                    top.linkTo(textName.bottom)
+                    width = Dimension.fillToConstraints
+                }
+                .padding(horizontal = 12.dp)
 
             Text(
-                text = subtitle,
+                text = "subtitle",
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = fontWeight,
-                modifier = Modifier
-                    .constrainAs(textMessage) {
-                        start.linkTo(iconRead.end)
-                        end.linkTo(unreadCount.start)
-                        top.linkTo(textName.bottom)
-                        width = Dimension.fillToConstraints
-                    }
-                    .padding(horizontal = 12.dp)
+                modifier = modifierBody
             )
+
+            /*val imageChat = chatInfo.lastMessage.getImageChat()
+            if (false) {
+                Icon(
+                    imageVector = Icons.Sharp.Image,
+                    contentDescription = "",
+                    modifier = modifierBody
+                )
+            } else {
+                val subtitle = if (chatInfo.typingIds.contains(contact.id)) {
+                    "Typing..."
+                } else {
+                    chatInfo.lastMessage.messageBody
+                }
+
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = fontWeight,
+                    modifier = modifierBody
+                )
+            }
 
             val unreadCountVisibility = if (chatInfo.unread >= 1 && !isFromMe) {
                 Visibility.Visible
@@ -250,7 +262,7 @@ fun ChatScreen(
                         width = Dimension.fillToConstraints
                     },
                 textAlign = TextAlign.End
-            )
+            )*/
         }
     }
 }

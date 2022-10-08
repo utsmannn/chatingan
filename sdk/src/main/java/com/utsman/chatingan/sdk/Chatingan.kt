@@ -6,6 +6,7 @@ import com.utsman.chatingan.sdk.data.entity.Chat
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
+import java.io.File
 
 interface Chatingan {
     val config: ChatinganConfig
@@ -14,11 +15,8 @@ interface Chatingan {
     suspend fun getContacts(): FlowEvent<List<Contact>>
     suspend fun sendMessage(contact: Contact, messageChat: MessageChat): FlowEvent<MessageChat>
 
-    suspend fun createMessageChat(
-        senderId: String,
-        receiverId: String,
-        message: String
-    ): MessageChat
+    suspend fun createMessageTextChat(contact: Contact, message: String): MessageChat
+    suspend fun createMessageImageChat(contact: Contact, message: String, file: File): MessageChat
 
     suspend fun getMessages(contact: Contact): FlowEvent<List<MessageChat>>
     suspend fun getChat(contact: Contact): FlowEvent<Chat>

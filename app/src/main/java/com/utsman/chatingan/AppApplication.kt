@@ -6,14 +6,10 @@ import com.utsman.chatingan.auth.data.AuthConfig
 import com.utsman.chatingan.auth.datasources.AuthDataSources
 import com.utsman.chatingan.chat.di.ChatModule
 import com.utsman.chatingan.common.IOScope
-import com.utsman.chatingan.common.event.onSuccess
 import com.utsman.chatingan.common.koin.moduleListOf
 import com.utsman.chatingan.contact.di.ContactModule
 import com.utsman.chatingan.di.AppModule
 import com.utsman.chatingan.home.HomeModule
-import com.utsman.chatingan.sdk.Chatingan
-import com.utsman.chatingan.sdk.data.config.ChatinganConfig
-import com.utsman.chatingan.sdk.data.entity.Contact
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext

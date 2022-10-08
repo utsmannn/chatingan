@@ -1,10 +1,11 @@
-package com.utsman.chatingan.chat.ui
+package com.utsman.chatingan.chat.ui.chat
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -27,23 +29,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.Button
 import androidx.compose.material.Card
-import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
-import androidx.compose.material.TopAppBar
+import androidx.compose.material.TextFieldColors
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.contentColorFor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.primarySurface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,17 +57,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import coil.compose.AsyncImage
+import com.utsman.chatingan.chat.routes.BackPassChat
 import com.utsman.chatingan.common.event.defaultCompose
 import com.utsman.chatingan.common.event.doOnIdle
 import com.utsman.chatingan.common.event.doOnSuccess
@@ -75,6 +83,7 @@ import com.utsman.chatingan.sdk.Chatingan
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
 import com.utsman.chatingan.sdk.utils.DateUtils
+import com.utsman.chatingan.sdk.utils.ImageUtils
 import com.utsman.chatingan.sdk.utils.isAllRead
 import com.utsman.chatingan.sdk.utils.isFromMe
 import kotlinx.coroutines.launch
@@ -101,11 +110,22 @@ private val ChatShapeReceiver = RoundedCornerShape(
 fun ChatScreen(
     contact: Contact,
     navigationProvider: NavigationProvider = get(),
-    viewModel: ChatViewModel = getViewModel()
+    viewModel: ChatViewModel = getViewModel(),
+    backPassChat: BackPassChat = get(),
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
     val chatState by viewModel.chatState.collectAsState()
+    val imageResult by viewModel.imageFileState.collectAsState()
+    val currentBackPass by backPassChat.currentBack.collectAsState()
+    val context = LocalContext.current
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, viewModel) {
+        onDispose {
+            viewModel.dispose()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -133,8 +153,22 @@ fun ChatScreen(
                     BottomBarChat(
                         contact = contact,
                         viewModel = viewModel,
+                        navigationProvider = navigationProvider,
                         onSend = {
-                            viewModel.sendMessage(contact, it)
+                            //val isImageFile = currentBackPass == ""
+                            //Toast.makeText(context, currentBackPass, Toast.LENGTH_SHORT).show()
+                            when (currentBackPass) {
+                                "CAMERA_VIEW" -> {
+                                    val imageFile = imageResult.getOrThrow()
+                                    viewModel.sendImage(contact, it, imageFile)
+                                    //Toast.makeText(context, "image", Toast.LENGTH_SHORT).show()
+                                    backPassChat.clearBackFrom()
+                                }
+                                else -> {
+                                    viewModel.sendMessage(contact, it)
+                                    //Toast.makeText(context, "text", Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         }
                     )
                 }
@@ -171,6 +205,19 @@ fun ChatScreen(
                                             MessageItem(messageChat = item)
                                         }
                                     }
+
+                                    /*if (imageResult.isSuccess) {
+                                        val imageFile = imageResult.getOrThrow()
+                                        item {
+                                            AsyncImage(
+                                                model = imageFile,
+                                                contentDescription = "",
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.size(120.dp)
+                                            )
+                                        }
+                                    }*/
+
                                 })
                         }
                 }
@@ -242,6 +289,7 @@ fun TopBarChat(
 fun BottomBarChat(
     viewModel: ChatViewModel,
     contact: Contact,
+    navigationProvider: NavigationProvider,
     onSend: (String) -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -253,28 +301,39 @@ fun BottomBarChat(
         modifier = Modifier
             .fillMaxWidth()
             .height(70.dp)
+            .padding(horizontal = 12.dp)
     ) {
-        Card(
-            shape = RoundedCornerShape(6.dp),
+
+        TextField(
             modifier = Modifier
                 .weight(3f)
-                .fillMaxHeight()
                 .padding(horizontal = 6.dp, vertical = 6.dp)
-                .background(Color.White)
-        ) {
-            TextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
-                value = text,
-                onValueChange = {
-                    viewModel.setText(it)
-                }
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            trailingIcon = {
+                Icon(
+                    Icons.Filled.PhotoCamera,
+                    "",
+                    tint = Color.LightGray,
+                    modifier = Modifier.clickable {
+                        navigationProvider.navigateToCamera()
+                    })
+            },
+            value = text,
+            onValueChange = {
+                viewModel.setText(it)
+            },
+            colors = TextFieldDefaults.textFieldColors(
+                disabledTextColor = Color.Transparent,
+                backgroundColor = Color.Gray,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent
             )
-        }
+        )
 
         Button(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+            modifier = Modifier.padding(start = 6.dp),
             onClick = {
                 onSend.invoke(text)
                 viewModel.setText("")
@@ -387,20 +446,33 @@ fun MessageItem(
                     }
                 }
 
-                Text(
-                    text = messageChat.messageBody,
-                    modifier = Modifier
-                        .constrainAs(messageText) {
-                            start.linkTo(parent.start)
-                            end.linkTo(parent.end)
-                            top.linkTo(parent.top)
-                            bottom.linkTo(indicatorRow.top)
-                        }
-                        .widthIn(min = 60.dp)
-                        .padding(horizontal = 6.dp, vertical = 3.dp)
-                )
+                val imageChat = messageChat.getImageChat()
 
+                val modifierBody = Modifier
+                    .constrainAs(messageText) {
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                        top.linkTo(parent.top)
+                        bottom.linkTo(indicatorRow.top)
+                    }
 
+                if (imageChat != null) {
+                    val bitmap = ImageUtils.stringToBitmap(imageChat.encodedBlur)
+                    AsyncImage(
+                        model = bitmap,
+                        contentDescription = "" ,
+                        modifier = modifierBody
+                            .widthIn(min = 60.dp)
+                            .padding(horizontal = 6.dp, vertical = 3.dp)
+                    )
+                } else {
+                    Text(
+                        text = messageChat.messageBody,
+                        modifier = modifierBody
+                            .widthIn(min = 60.dp)
+                            .padding(horizontal = 6.dp, vertical = 3.dp)
+                    )
+                }
             }
         }
     }
@@ -427,9 +499,8 @@ fun DividerScreen(messageChat: MessageChat) {
     }
 }
 
-/*
 @Preview
 @Composable
 fun PreviewChat() {
     ChatScreen(contact = Contact())
-}*/
+}

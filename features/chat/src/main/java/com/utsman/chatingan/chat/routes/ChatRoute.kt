@@ -5,7 +5,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
-import com.utsman.chatingan.chat.ui.ChatScreen
+import com.utsman.chatingan.chat.ui.camera.CameraScreen
+import com.utsman.chatingan.chat.ui.chat.ChatScreen
 import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.navigation.NavigationRouteModule
 import com.utsman.chatingan.navigation.Route
@@ -13,20 +14,16 @@ import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.contract.JsonParcelize
 
 object ChatRoute : NavigationRouteModule {
-    //val ChatArg = Chat(NavigationProvider.NavArg.CONTACT_ARG)
 
     override val parent: String
         get() = "chat/main"
-
-    /*class Chat(private val arg: String) : Route {
-        override val value: String
-            get() = "$parent/{$arg}"
-    }*/
 
     object Chat : Route("$parent/chat") {
         override val arg: String
             get() = "contact"
     }
+
+    object Camera : Route("$parent/camera")
 
 
     override fun registerNavGraph(navGraphBuilder: NavGraphBuilder) {
@@ -41,6 +38,9 @@ object ChatRoute : NavigationRouteModule {
                 val jsonContact = it.arguments?.getString(NavigationProvider.NavArg.CONTACT_ARG)
                 val contact = JsonParcelize.toObjectUri(jsonContact) ?: Contact()
                 ChatScreen(contact)
+            }
+            composable(Camera.getValue()) {
+                CameraScreen()
             }
         }
     }

@@ -2,4 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.utsman.chatingan.contact">
 
+    <application android:hardwareAccelerated="true">
+        <activity android:name=".ui.QrCaptureActivity"
+            android:screenOrientation="fullSensor"
+            android:stateNotNeeded="true"
+            android:theme="@style/AppCompat"/>
+    </application>
+
 </manifest>

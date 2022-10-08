@@ -2,7 +2,7 @@ package com.utsman.chatingan.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
-import com.utsman.chatingan.sdk.data.entity.Contact
+import com.utsman.chatingan.lib.data.model.Contact
 
 interface NavigationProvider {
     val navHostController: NavHostController
@@ -20,9 +20,11 @@ interface NavigationProvider {
 
     /* CHAT */
     fun navigateToChat(contact: Contact)
+    fun navigateToCamera()
 
     /* CONTACT */
     fun navigateToContact()
+    fun navigateToAddContact()
 
     object NavArg {
         const val CONTACT_ARG = "contact"

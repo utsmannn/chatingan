@@ -3,7 +3,7 @@ package com.utsman.chatingan.services
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.utsman.chatingan.common.IOScope
-import com.utsman.chatingan.sdk.Chatingan
+import com.utsman.chatingan.lib.Chatingan
 import kotlinx.coroutines.launch
 
 class AppFirebaseService : FirebaseMessagingService() {
@@ -13,6 +13,8 @@ class AppFirebaseService : FirebaseMessagingService() {
         println("------- message incoming ------")
         println(message.data)
         println("------- message incoming end ------")
+
+        Chatingan.getInstance().bindToFirebaseMessagingServices(message.data)
     }
 
     override fun onNewToken(token: String) {
@@ -20,9 +22,9 @@ class AppFirebaseService : FirebaseMessagingService() {
         println("new token fcm ---")
         println(token)
         println("new token fcm --- end ")
-        IOScope().launch {
+        /*IOScope().launch {
             Chatingan.getInstance().updateFcm(token)
-        }
+        }*/
     }
 
 }

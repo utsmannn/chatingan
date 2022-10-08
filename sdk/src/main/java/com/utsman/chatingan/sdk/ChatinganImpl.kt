@@ -15,6 +15,7 @@ import com.utsman.chatingan.sdk.data.entity.Chat
 import com.utsman.chatingan.sdk.data.entity.ChatInfo
 import com.utsman.chatingan.sdk.data.entity.Contact
 import com.utsman.chatingan.sdk.data.entity.MessageChat
+import com.utsman.chatingan.sdk.data.entity.MessageImage
 import com.utsman.chatingan.sdk.data.store.ContactStore
 import com.utsman.chatingan.sdk.data.store.MessageChatStore
 import com.utsman.chatingan.sdk.database.ChatInfoDatabase
@@ -22,18 +23,16 @@ import com.utsman.chatingan.sdk.database.ContactDatabase
 import com.utsman.chatingan.sdk.database.MessageChatDatabase
 import com.utsman.chatingan.sdk.services.FirebaseServices
 import com.utsman.chatingan.sdk.utils.DividerCalculator
+import com.utsman.chatingan.sdk.utils.ImageUtils
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
+import java.io.File
 import java.time.Instant
 import java.util.*
 
@@ -142,15 +141,32 @@ internal class ChatinganImpl(
             }
     }
 
-    override suspend fun createMessageChat(
-        senderId: String,
-        receiverId: String,
-        message: String
-    ): MessageChat {
+    override suspend fun createMessageTextChat(contact: Contact, message: String): MessageChat {
         return MessageChatStore.build(
-            senderId = senderId,
-            receiverId = receiverId,
+            senderId = config.contact.id,
+            receiverId = contact.id,
             message = message,
+            date = Date.from(Instant.now())
+        ).toMessageChat()
+    }
+
+    override suspend fun createMessageImageChat(
+        contact: Contact,
+        message: String,
+        file: File
+    ): MessageChat {
+        val encodedBlur = ImageUtils.blurImage(file)
+        val messageImage = MessageImage(
+            encodedBlur = encodedBlur,
+            name = file.name,
+            caption = message
+        )
+
+        val messageJson = messageImage.toJson()
+        return MessageChatStore.build(
+            senderId = config.contact.id,
+            receiverId = contact.id,
+            message = messageJson,
             date = Date.from(Instant.now())
         ).toMessageChat()
     }
@@ -175,6 +191,7 @@ internal class ChatinganImpl(
                 storage?.listenItem() ?: emptyStateEvent()
             }
             .debounce(500)
+            .distinctUntilChanged()
             .map {
                 it.map { messages ->
                     val newMessages = DividerCalculator.calculateDividerChat(messages)
@@ -198,7 +215,17 @@ internal class ChatinganImpl(
     }
 
     override suspend fun getChatInfos(): FlowEvent<List<ChatInfo>> {
-        return chatInfoDatabase.listenItem()
+        return chatInfoDatabase.listenItem().map {
+            it.map { chatInfos ->
+                chatInfos.map { info ->
+                    val lastMessage = info.lastMessage
+                    if (lastMessage.getImageChat() != null) {
+                        info.lastMessage.messageBody = "IMAGE"
+                    }
+                    info
+                }
+            }
+        }.stateIn(IOScope())
     }
 
     override suspend fun getChatInfo(contact: Contact): FlowEvent<ChatInfo> {
@@ -229,7 +256,6 @@ internal class ChatinganImpl(
                                 messages = emptyList(),
                                 chatInfo = info
                             )
-
                         }
                         .filterNotNull()
                         .asReversed()

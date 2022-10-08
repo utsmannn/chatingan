@@ -10,8 +10,19 @@ apply from: script_dependencies_auth
 apply from: script_dependencies_compose
 
 dependencies {
+    implementation module_lib
     implementation module_core_common
-    implementation module_core_chatsdk
+    //implementation module_core_chatsdk
     implementation module_core_auth
     implementation module_core_navigation
+
+    def camerax_version = "1.1.0"
+    implementation "androidx.camera:camera-camera2:$camerax_version"
+    implementation "androidx.camera:camera-lifecycle:$camerax_version"
+    implementation "androidx.camera:camera-view:$camerax_version"
+
+    // prevent dependencies conflict (ListenableFuture)
+    implementation "com.google.guava:guava:27.0.1-android"
+
+    implementation "id.zelory:compressor:3.0.1"
 }
