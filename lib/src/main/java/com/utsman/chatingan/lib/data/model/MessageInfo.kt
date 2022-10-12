@@ -7,16 +7,8 @@ import java.util.*
 data class MessageInfo(
     val id: String = "",
     val receiver: Contact,
+    val lastMessage: Message,
+    val isTyping: Boolean,
+    val unreadCount: Int,
     val lastUpdate: Date = Utils.now().toDate()
-) {
-
-    companion object {
-        fun empty(contact: Contact): MessageInfo {
-            return MessageInfo(
-                id = "",
-                receiver = contact,
-                lastUpdate = Utils.now().toDate()
-            )
-        }
-    }
-}
+)

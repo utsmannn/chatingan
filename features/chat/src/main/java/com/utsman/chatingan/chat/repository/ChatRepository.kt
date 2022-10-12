@@ -1,31 +1,20 @@
 package com.utsman.chatingan.chat.repository
 
-import com.utsman.chatingan.common.base.BaseRepository
 import com.utsman.chatingan.common.event.FlowEvent
-import com.utsman.chatingan.common.event.StateEvent
 import com.utsman.chatingan.common.koin.KoinInjector
-import com.utsman.chatingan.sdk.data.entity.Chat
-import com.utsman.chatingan.sdk.data.entity.ChatInfo
-import com.utsman.chatingan.sdk.data.entity.Contact
-import com.utsman.chatingan.sdk.data.entity.MessageChat
+import com.utsman.chatingan.lib.data.model.Contact
+import com.utsman.chatingan.lib.data.model.Message
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 import org.koin.core.module.Module
 import org.koin.dsl.module
-import java.io.File
 
-interface ChatRepository : BaseRepository {
-    val chatState: FlowEvent<Chat>
-    val chatInfoState: FlowEvent<ChatInfo>
-    val message: FlowEvent<MessageChat>
-    val isReceiverIsTyping: StateFlow<Boolean>
-
-    suspend fun getChat(contact: Contact)
-    suspend fun getChatInfo(contact: Contact)
-    suspend fun readChat(contact: Contact, messageChat: MessageChat)
-    suspend fun sendMessage(contact: Contact, message: String)
-    suspend fun sendImage(contact: Contact, message: String, file: File)
-    suspend fun setTypingStatus(contact: Contact, isTyping: Boolean)
+interface ChatRepository {
+    fun getContact(contactId: String): Flow<Contact>
+    fun getMessages(scope: CoroutineScope, contact: Contact): FlowEvent<List<Message>>
+    fun setTypingStatus(scope: CoroutineScope, contact: Contact, isTyping: Boolean)
+    fun sendMessage(scope: CoroutineScope, contact: Contact, message: Message)
+    fun markAsRead(scope: CoroutineScope, contact: Contact, message: Message)
 
     companion object : KoinInjector {
         override fun inject(): Module {

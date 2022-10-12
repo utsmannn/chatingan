@@ -118,24 +118,17 @@ fun SplashScreen(
                 )*/
 
                 val meContact = Contact.build {
+                    id = user.id
                     name = user.name
                     email = user.email
                     imageUrl = user.photoUrl
                     fcmToken = token
                 }
 
-                Chatingan.initialize(context) {
+                Chatingan.updateConfig(context) {
                     contact = meContact
-                    fcmToken = token
-                    fcmServerKey = AppApplication.SERVER_KEY
                 }
 
-                println("ASUUUUUU -> $token")
-
-                //val chatingan = Chatingan.getInstance()
-                //val chatinganQr = chatingan.getChatinganQr()
-                //val qrBitmap = chatinganQr.generateQrContact()
-                //ShowQr(bitmap = qrBitmap)
                 navigationProvider.screenOf(
                     routeViewModel = mainViewModel,
                     destination = HomeRoute.Home

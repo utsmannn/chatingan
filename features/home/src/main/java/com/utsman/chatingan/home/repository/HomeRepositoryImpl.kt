@@ -42,7 +42,7 @@ class HomeRepositoryImpl(
             .collectToStateEvent(_contactState)
     }
 
-    override suspend fun getChats() {
+    override suspend fun getMessages() {
         Chatingan
             .getInstance()
             .getMessagesInfo()

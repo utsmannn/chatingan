@@ -3,6 +3,7 @@ package com.utsman.chatingan.navigation
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import com.utsman.chatingan.lib.data.model.Contact
+import com.utsman.chatingan.lib.data.model.MessageInfo
 
 interface NavigationProvider {
     val navHostController: NavHostController
@@ -27,6 +28,6 @@ interface NavigationProvider {
     fun navigateToAddContact()
 
     object NavArg {
-        const val CONTACT_ARG = "contact"
+        const val MESSAGE_CONTACT_ARG = "contact"
     }
 }

@@ -13,13 +13,9 @@ import org.koin.dsl.module
 class ContactViewModel(
     private val contactRepository: ContactRepository
 ) : RouteViewModel(ContactRoute.Contact) {
-    val contactState = contactRepository.contacts
-    val userState = contactRepository.user
 
-    init {
-        viewModelScope.launch { contactRepository.getContact() }
-        viewModelScope.launch { contactRepository.getUser() }
-    }
+    fun getContacts() = contactRepository.getContacts(viewModelScope)
+    fun getUser() = contactRepository.getUser(viewModelScope)
 
     companion object : KoinInjector {
         override fun inject(): Module {

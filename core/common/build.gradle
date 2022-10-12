@@ -8,3 +8,7 @@ apply from: script_android_lib
 apply from: script_dependencies_common
 apply from: script_dependencies_compose
 apply from: script_dependencies_network
+
+dependencies {
+    implementation 'org.ocpsoft.prettytime:prettytime:5.0.2.Final'
+}

@@ -47,6 +47,7 @@ import com.utsman.chatingan.lib.data.pair.ContactPairListener
 import com.utsman.chatingan.lib.isValid
 import com.utsman.chatingan.navigation.NavigationProvider
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
@@ -71,9 +72,13 @@ fun AddContactScreen(
         mutableStateOf(Contact.empty())
     }
 
-    val meContact = Chatingan.getInstance()
+    val meContact: Contact = remember {
+        Chatingan.getInstance().getConfiguration().contact
+    }
+
+    /*val meContact = Chatingan.getInstance()
         .getConfiguration()
-        .contact
+        .contact*/
 
     Chatingan
         .getInstance()
@@ -101,6 +106,7 @@ fun AddContactScreen(
             val content = result.contents
             if (content != null) {
                 val contact = ChatinganQrUtils.generateContactFromPair(content)
+
                 currentPairContact = contact
 
                 coroutineScope.launch {
@@ -169,8 +175,8 @@ fun BottomSheetContact(
     onBack: suspend () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val isContactExist by viewModel.isContactExists.collectAsState()
-    val contactSaved by viewModel.isAddContactSuccess.collectAsState()
+    val isContactExist by viewModel.checkContactIsExist(contact).collectAsState()
+
     var isExist by remember {
         mutableStateOf(false)
     }
@@ -187,15 +193,6 @@ fun BottomSheetContact(
         .doOnSuccess {
             savedButtonEnabled = true
             isExist = it
-        }
-
-    contactSaved
-        .doOnSuccess {
-            if (!isExist) {
-                coroutineScope.launch {
-                    onBack.invoke()
-                }
-            }
         }
 
     Box(
@@ -219,6 +216,13 @@ fun BottomSheetContact(
                         onBack.invoke()
                     } else {
                         viewModel.addContact(contact)
+                            .collect {
+                                it.doOnSuccess {
+                                    if (!isExist) {
+                                        onBack.invoke()
+                                    }
+                                }
+                            }
                     }
                 }
             }, enabled = savedButtonEnabled) {

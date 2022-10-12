@@ -17,7 +17,7 @@ interface HomeRepository {
 
     suspend fun getUser()
     suspend fun getContacts()
-    suspend fun getChats()
+    suspend fun getMessages()
 
     /* Single one shoot */
     //suspend fun getContact(chatInfo: ChatInfo): FlowEvent<Contact>

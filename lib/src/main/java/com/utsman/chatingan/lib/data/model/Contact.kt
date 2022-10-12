@@ -11,10 +11,14 @@ data class Contact(
     val email: String,
     val imageUrl: String,
     val fcmToken: String,
+    val lastMessageId: String,
+    val isTyping: Boolean,
+    val lastMessageUpdate: Date,
     val lastUpdate: Date
 ) {
 
     data class Builder(
+        var id: String = "",
         var name: String = "",
         var email: String = "",
         var imageUrl: String = "",
@@ -25,18 +29,29 @@ data class Contact(
 
         fun empty(): Contact {
             return Contact(
-                "", "unknown", "", "", "", Utils.now().toDate()
+                id = "",
+                name = "unknown",
+                email = "",
+                imageUrl = "",
+                fcmToken = "",
+                lastMessageId = "",
+                isTyping = false,
+                lastMessageUpdate = Utils.now().toDate(),
+                lastUpdate = Utils.now().toDate()
             )
         }
 
         fun build(builder: Builder.() -> Unit): Contact {
             val contactBuilder = Builder().apply(builder)
             return Contact(
-                id = UUID.randomUUID().toString(),
+                id = contactBuilder.id,
                 name = contactBuilder.name,
                 email = contactBuilder.email,
                 imageUrl = contactBuilder.imageUrl,
                 fcmToken = contactBuilder.fcmToken,
+                lastMessageId = "",
+                isTyping = false,
+                lastMessageUpdate = Utils.now().toDate(),
                 lastUpdate = Utils.now().toDate()
             )
         }

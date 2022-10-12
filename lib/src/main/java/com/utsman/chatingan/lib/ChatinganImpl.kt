@@ -1,28 +1,31 @@
 package com.utsman.chatingan.lib
 
 import android.content.Context
+import com.utsman.chatingan.common.IOScope
 import com.utsman.chatingan.lib.data.ChatinganException
+import com.utsman.chatingan.lib.data.entity.ContactEntity
 import com.utsman.chatingan.lib.data.firebase.FirebaseMessageRequest
-import com.utsman.chatingan.lib.data.firebase.FirebaseNotification
+import com.utsman.chatingan.lib.receiver.MessageNotifier
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
-import com.utsman.chatingan.lib.data.pair.ContactPair
-import com.utsman.chatingan.lib.data.pair.ContactPairListener
+import com.utsman.chatingan.lib.data.model.MessageReport
 import com.utsman.chatingan.lib.database.ChatinganDao
 import com.utsman.chatingan.lib.database.ChatinganDatabase
 import com.utsman.chatingan.lib.services.FirebaseWebServices
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.utsman.chatingan.lib.utils.ChatinganDividerUtils
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class ChatinganImpl(
-    private val context: Context,
-    private val config: ChatinganConfiguration
+    private val context: Context
 ) : Chatingan {
 
     private val database: ChatinganDatabase
@@ -36,12 +39,15 @@ class ChatinganImpl(
     private val webServices: FirebaseWebServices
         get() = FirebaseWebServices.getInstance(config)
 
+    private val config: ChatinganConfiguration
+        get() = getConfiguration()
+
     override fun getConfiguration(): ChatinganConfiguration {
-        return config
+        return ChatinganConfiguration.getPref(context)
     }
 
     private val _chatinganQr by lazy {
-        ChatinganQrImpl(config) { contactPaired, qrImpl ->
+        ChatinganQrImpl(getConfiguration().contact) { contactPaired, qrImpl ->
             val contentContact = config.contact.toJson()
             val existingContact = chatinganDao.getContactByEmail(contactPaired.email)
             if (existingContact != null) {
@@ -53,7 +59,7 @@ class ChatinganImpl(
             val isSuccessRequest = sendNotification(
                 token = contactPaired.fcmToken,
                 json = contentContact,
-                notificationType = FirebaseNotification.NotificationType.CONTACT_PAIR,
+                notificationType = MessageNotifier.NotificationType.CONTACT_PAIR,
                 messageType = Message.Type.OTHER
             )
 
@@ -69,20 +75,59 @@ class ChatinganImpl(
         return _chatinganQr
     }
 
-    override fun bindToFirebaseMessagingServices(data: Map<String, String>) {
-        val incomingNotification = FirebaseNotification.fromMap(data)
-        CoroutineScope(Dispatchers.IO).launch {
-            when (incomingNotification.type) {
-                FirebaseNotification.NotificationType.MESSAGE -> {
-                    saveMessageFromNotification(incomingNotification)
-                }
-                FirebaseNotification.NotificationType.CONTACT_PAIR -> {
-                    saveContactPairFromNotification(incomingNotification)
-                }
-                else -> {
-
+    override fun bindToFirebaseMessagingServices(
+        data: Map<String, String>,
+        onMessageIncoming: (Contact, Message) -> Unit
+    ) {
+        val incomingNotification = MessageNotifier.fromMap(data)
+        when (incomingNotification.type) {
+            MessageNotifier.NotificationType.MESSAGE -> {
+                IOScope().launch {
+                    saveMessageFromNotification(incomingNotification, onMessageIncoming)
                 }
             }
+            MessageNotifier.NotificationType.CONTACT_PAIR -> {
+                IOScope().launch {
+                    saveContactPairFromNotification(incomingNotification)
+                }
+            }
+            MessageNotifier.NotificationType.TYPING -> {
+                IOScope().launch {
+                    updateContactTyping(incomingNotification)
+                }
+            }
+            MessageNotifier.NotificationType.MESSAGE_REPORT -> {
+                IOScope().launch {
+                    updateMessageStatus(incomingNotification)
+                }
+            }
+            MessageNotifier.NotificationType.CONTACT_UPDATE -> {
+                IOScope().launch {
+                    updateContact(incomingNotification)
+                }
+            }
+            else -> {
+
+            }
+        }
+    }
+
+    override fun updateFcmToken(fcmToken: String) {
+        val currentContact = config.contact
+        val updatedContact = currentContact.copy(fcmToken = fcmToken)
+        val updatedContactEntity = DataMapper.mapContactToEntity(updatedContact)
+        IOScope().launch {
+            chatinganDao.getAllContact()
+                .firstOrNull()
+                ?.onEach {
+                    val targetToken = it.fcmToken
+                    sendNotification(
+                        token = targetToken,
+                        json = updatedContactEntity.toJson(),
+                        notificationType = MessageNotifier.NotificationType.CONTACT_UPDATE,
+                        messageType = Message.Type.OTHER
+                    )
+                }
         }
     }
 
@@ -100,27 +145,26 @@ class ChatinganImpl(
             _chatinganQr.setPairListenerFailure(throwable)
         } else {
             chatinganDao.insertContact(entity)
-            val contactPair = DataMapper.mapContactToPairData(config.contact)
             sendNotification(
                 token = entity.fcmToken,
-                json = contactPair.toJson(),
-                notificationType = FirebaseNotification.NotificationType.CONTACT_PAIR,
+                json = config.contact.toJson(),
+                notificationType = MessageNotifier.NotificationType.CONTACT_PAIR,
                 messageType = Message.Type.OTHER,
-                title = contactPair.name,
-                subtitle = "Success add ${contactPair.name}"
+                title = config.contact.name,
+                subtitle = "Success add ${config.contact.name}"
             )
 
             _chatinganQr.setPairListenerSuccess(contact)
         }
     }
 
-    override suspend fun getAllContact(): Flow<List<Contact>> {
+    override fun getAllContact(): Flow<List<Contact>> {
         return chatinganDao.getAllContact().map { contacts ->
             contacts.map { entity -> DataMapper.mapEntityToContact(entity) }
         }
     }
 
-    override suspend fun getContactByEmail(email: String): Flow<Contact> {
+    override fun getContactByEmail(email: String): Flow<Contact> {
         return flow {
             val entity = chatinganDao.getContactByEmail(email)
                 ?: throw ChatinganException("Contact not found!")
@@ -129,29 +173,29 @@ class ChatinganImpl(
         }
     }
 
+    override fun getContact(contactId: String): Flow<Contact> {
+        return chatinganDao.getContactFlow(contactId).map { DataMapper.mapEntityToContact(it) }
+    }
+
     override suspend fun getMessagesInfo(): Flow<List<MessageInfo>> {
-        return chatinganDao.getAllMessageInfoAndReceiverContact().map { transaction ->
-            transaction.map { messagesInfoAndReceiverContact ->
-                if (messagesInfoAndReceiverContact.messageInfoEntities.isNotEmpty()) {
-                    DataMapper.mapMessagesInfoAndReceiverContactToMessagesInfo(
-                        messagesInfoAndReceiverContact
-                    )
-                } else {
-                    val contact = DataMapper.mapEntityToContact(
-                        messagesInfoAndReceiverContact.receiverEntity
-                    )
-                    MessageInfo.empty(contact)
+        return chatinganDao.getContactAndLastMessages().map { list ->
+            list
+                .map {
+                    val senderId = it.contactEntity.id
+                    val unreadCount =
+                        chatinganDao.getUnreadCount(senderId, Message.Status.READ.name)
+                    DataMapper.mapContactAndLastMessageToMessageInfo(it, unreadCount)
                 }
-            }.filter {
-                it.id.isNotEmpty()
-            }
+                .filter {
+                    it.lastMessage.isNotEmpty()
+                }
         }
     }
 
-    override suspend fun sendMessage(message: Message) {
+    override suspend fun sendMessage(contact: Contact, message: Message) {
         when (message) {
             is Message.TextMessages -> {
-                sendTextMessage(message)
+                sendTextMessage(contact, message)
             }
             else -> {
 
@@ -159,44 +203,63 @@ class ChatinganImpl(
         }
     }
 
-    override suspend fun getMessages(messageInfo: MessageInfo): Flow<List<Message>> {
-        return chatinganDao.getAllMessage(messageInfo.id)
+    override fun getMessages(contact: Contact, withDivider: Boolean): Flow<List<Message>> {
+        return chatinganDao.getAllMessage(contact.id)
             .map { messages ->
-                messages.map { entity -> DataMapper.mapEntityToMessage(entity) }
+                messages.map { entity ->
+                    DataMapper.mapEntityToMessage(entity)
+                }.run {
+                    if (withDivider) {
+                        ChatinganDividerUtils.calculateDividerChat(this)
+                    } else {
+                        this
+                    }
+                }
             }
+            .distinctUntilChanged()
     }
 
-    override suspend fun getLastMessage(messageInfo: MessageInfo): Flow<Message> {
-        return chatinganDao.getLastMessage(messageInfo.id).map { DataMapper.mapEntityToMessage(it) }
-    }
-
-    private suspend fun sendTextMessage(textMessages: Message.TextMessages) {
-        val currentMessageInfoId = textMessages.messageInfoId
-        if (!chatinganDao.isMessageInfoExist(currentMessageInfoId)) {
-            val receiver = chatinganDao.getContactById(textMessages.receiverId)
-                ?: throw ChatinganException("Contact not found")
-            val newMessageInfoEntity = MessageInfo(
-                id = currentMessageInfoId,
-                receiver = receiver.run { DataMapper.mapEntityToContact(this) }
-            ).run { DataMapper.mapMessageInfoToEntity(this) }
-            chatinganDao.insertMessageInfo(newMessageInfoEntity)
+    override fun getLastMessage(messageInfo: MessageInfo): Flow<Message> {
+        return chatinganDao.getLastMessage(messageInfo.receiver.id).map {
+            DataMapper.mapEntityToMessage(it)
         }
+    }
 
-        val currentMessageInfo = chatinganDao.getMessageInfoAndReceiverContact(currentMessageInfoId)
-            .run {
-                DataMapper.mapMessagesInfoAndReceiverContactToMessagesInfo(this)
-            }
+    override suspend fun markMessageIsRead(contact: Contact, message: Message) {
+        val messageReport = MessageReport(message.getChildId(), Message.Status.READ)
+        sendNotification(
+            token = contact.fcmToken,
+            json = messageReport.toJson(),
+            notificationType = MessageNotifier.NotificationType.MESSAGE_REPORT,
+            messageType = Message.Type.OTHER
+        )
+        chatinganDao.updateMessageStatus(messageReport.messageId, messageReport.status.name)
+    }
 
-        val receiver = currentMessageInfo.receiver
+    override suspend fun setTyping(contact: Contact, isTyping: Boolean) {
+        val contactEntity = DataMapper.mapContactToEntity(config.contact)
+            .setTyping(isTyping)
+
+        val content = contactEntity.toJson()
+        sendNotification(
+            token = contact.fcmToken,
+            json = content,
+            notificationType = MessageNotifier.NotificationType.TYPING,
+            messageType = Message.Type.OTHER
+        )
+    }
+
+    private suspend fun sendTextMessage(contact: Contact, textMessages: Message.TextMessages) {
         val messageJson = textMessages.toJson()
-
         val messageEntity = DataMapper.mapMessageToEntity(textMessages)
+
         chatinganDao.insertMessage(messageEntity)
 
+        val receiver = contact.copy(lastMessageId = messageEntity.id)
         val isNotificationSuccess = sendNotification(
             token = receiver.fcmToken,
             json = messageJson,
-            notificationType = FirebaseNotification.NotificationType.MESSAGE,
+            notificationType = MessageNotifier.NotificationType.MESSAGE,
             messageType = Message.Type.TEXT,
             title = receiver.name,
             subtitle = textMessages.messageBody.ellipsize(ELLIPSIZE_MAX)
@@ -207,21 +270,45 @@ class ChatinganImpl(
         } else {
             Message.Status.FAILURE
         }
+
         val newMessageEntity = messageEntity.changeStatus(messageStatus)
+        val updatedContactEntity = DataMapper.mapContactToEntity(receiver)
+        chatinganDao.updateContact(updatedContactEntity)
+
+        val updatedContactMe = config.contact.copy(lastMessageId = newMessageEntity.id)
+        config.updateContact(updatedContactMe)
+
         chatinganDao.updateMessage(newMessageEntity)
     }
 
-    private suspend fun saveMessageFromNotification(notification: FirebaseNotification) {
-        if (notification.type != FirebaseNotification.NotificationType.MESSAGE) return
+    private suspend fun saveMessageFromNotification(
+        notification: MessageNotifier,
+        onMessageIncoming: (Contact, Message) -> Unit
+    ) {
+        if (notification.type != MessageNotifier.NotificationType.MESSAGE) return
         when (notification.messageType) {
             Message.Type.TEXT -> {
                 val textMessage: Message.TextMessages = Utils.convertFromJson(notification.body)
-                val currentMessageInfo = chatinganDao.getMessageInfoById(textMessage.messageInfoId)
+                val newTextMessage = textMessage.updateStatus(Message.Status.RECEIVED)
+                val textMessageEntity = DataMapper.mapMessageToEntity(newTextMessage)
+                chatinganDao.insertMessage(textMessageEntity)
 
-                chatinganDao.insertMessage(DataMapper.mapMessageToEntity(textMessage))
+                val contactEntity = chatinganDao.getContactById(textMessage.senderId)
+                    ?: throw ChatinganException("Contact not found!")
+                val contact = DataMapper
+                    .mapEntityToContact(contactEntity)
+                    .copy(lastMessageId = textMessage.id)
+                val newContactEntity = DataMapper.mapContactToEntity(contact)
 
-                val updatedMessageInfo = currentMessageInfo.updateTime()
-                chatinganDao.updateMessageInfo(updatedMessageInfo)
+                val messageReport = MessageReport(textMessage.id, Message.Status.RECEIVED)
+                sendNotification(
+                    token = contact.fcmToken,
+                    json = messageReport.toJson(),
+                    notificationType = MessageNotifier.NotificationType.MESSAGE_REPORT,
+                    messageType = Message.Type.OTHER
+                )
+                chatinganDao.updateContact(newContactEntity)
+                sendToServices(textMessage.id, onMessageIncoming)
             }
             Message.Type.IMAGE -> {
 
@@ -232,15 +319,33 @@ class ChatinganImpl(
         }
     }
 
-    private suspend fun saveContactPairFromNotification(notification: FirebaseNotification) {
-        if (notification.type != FirebaseNotification.NotificationType.CONTACT_PAIR) return
-        val contactPair: ContactPair = Utils.convertFromJson(notification.body)
-        val contactPaired = DataMapper.mapContactPairToContact(contactPair)
-        val contactEntity = DataMapper.mapContactToEntity(contactPaired)
+    private suspend fun sendToServices(
+        messageId: String,
+        onMessageIncoming: (Contact, Message) -> Unit
+    ) {
+        delay(1000)
+        if (!chatinganDao.isMessageMatchStatus(messageId, Message.Status.READ.name)) {
+            val messageAndSender = chatinganDao.getMessageAndSender(messageId)
+                .first()
+
+            val senderEntity = messageAndSender.contactEntity.firstOrNull()
+            val messageEntity = messageAndSender.messages
+            if (senderEntity != null) {
+                val sender = DataMapper.mapEntityToContact(senderEntity)
+                val message = DataMapper.mapEntityToMessage(messageEntity)
+                onMessageIncoming.invoke(sender, message)
+            }
+        }
+    }
+
+    private suspend fun saveContactPairFromNotification(notification: MessageNotifier) {
+        if (notification.type != MessageNotifier.NotificationType.CONTACT_PAIR) return
+        val contact: Contact = Utils.convertFromJson(notification.body)
+        val contactEntity = DataMapper.mapContactToEntity(contact)
         if (!chatinganDao.isContactExist(contactEntity.email)) {
             chatinganDao.insertContact(contactEntity)
             MainScope().launch {
-                _chatinganQr.setPairListenerSuccess(contactPaired)
+                _chatinganQr.setPairListenerSuccess(contact)
             }
         } else {
             MainScope().launch {
@@ -249,10 +354,28 @@ class ChatinganImpl(
         }
     }
 
+    private suspend fun updateContactTyping(notification: MessageNotifier) {
+        if (notification.type != MessageNotifier.NotificationType.TYPING) return
+        val contactEntity: ContactEntity = Utils.convertFromJson(notification.body)
+        chatinganDao.updateTypingByEmail(contactEntity.email, contactEntity.isTyping)
+    }
+
+    private suspend fun updateMessageStatus(notification: MessageNotifier) {
+        if (notification.type != MessageNotifier.NotificationType.MESSAGE_REPORT) return
+        val messageReport: MessageReport = Utils.convertFromJson(notification.body)
+        chatinganDao.updateMessageStatus(messageReport.messageId, messageReport.status.name)
+    }
+
+    private suspend fun updateContact(notification: MessageNotifier) {
+        if (notification.type != MessageNotifier.NotificationType.CONTACT_UPDATE) return
+        val contactEntity: ContactEntity = Utils.convertFromJson(notification.body)
+        chatinganDao.updateContact(contactEntity)
+    }
+
     private suspend fun sendNotification(
         token: String,
         json: String,
-        notificationType: FirebaseNotification.NotificationType,
+        notificationType: MessageNotifier.NotificationType,
         messageType: Message.Type,
         title: String = "",
         subtitle: String = ""
@@ -273,8 +396,7 @@ class ChatinganImpl(
         val response = webServices.sendMessage(firebaseRequest)
         if (!response.isSuccessful) return false
 
-        val body = response.body()
-        return body?.failure == null
+        return response.code() == 200
     }
 
     companion object {

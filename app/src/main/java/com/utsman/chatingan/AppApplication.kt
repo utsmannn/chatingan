@@ -10,6 +10,7 @@ import com.utsman.chatingan.common.koin.moduleListOf
 import com.utsman.chatingan.contact.di.ContactModule
 import com.utsman.chatingan.di.AppModule
 import com.utsman.chatingan.home.HomeModule
+import com.utsman.chatingan.lib.Chatingan
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
@@ -19,6 +20,10 @@ class AppApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Chatingan.initialize(this) {
+            fcmServerKey = SERVER_KEY
+        }
+
         startKoin {
             androidContext(this@AppApplication)
             moduleListOf(

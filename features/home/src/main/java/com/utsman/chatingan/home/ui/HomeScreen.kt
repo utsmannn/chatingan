@@ -21,6 +21,11 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,11 +47,19 @@ import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
+import com.utsman.chatingan.common.ui.component.IconResChatDoneAllRead
 import com.utsman.chatingan.home.R
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.data.model.Contact
+import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
+import com.utsman.chatingan.lib.ellipsize
+import com.utsman.chatingan.lib.ifTextMessage
 import com.utsman.chatingan.navigation.NavigationProvider
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 
@@ -56,6 +69,9 @@ fun HomeScreen(
     viewModel: HomeViewModel = getViewModel()
 ) {
     val chatsState by viewModel.chatState.collectAsState()
+    val meContact = remember {
+        Chatingan.getInstance().getConfiguration().contact
+    }
 
     viewModel.getUser()
     Scaffold(
@@ -75,14 +91,16 @@ fun HomeScreen(
         }
     ) {
         DefaultLayoutAppBar(title = "Chatingan") {
+            Text(text = meContact.id)
             chatsState.defaultCompose()
                 .onSuccess { chats ->
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         content = {
                             items(chats) { messageInfo ->
-                                ChatScreen(
+                                ChatItemScreen(
                                     messageInfo = messageInfo,
+                                    meContact = meContact,
                                     onClick = {
                                         navigationProvider.navigateToChat(it)
                                     }
@@ -95,15 +113,13 @@ fun HomeScreen(
 }
 
 @Composable
-fun ChatScreen(
+fun ChatItemScreen(
     messageInfo: MessageInfo,
+    meContact: Contact,
     onClick: (Contact) -> Unit
 ) {
-    val contactMe = Chatingan.getInstance().getConfiguration().contact
-    //val lastMessage = chatInfo.lastMessage
-   // val isHasRead = lastMessage.isAllRead()
-    val isHasRead = true
-    val isFromMe = messageInfo.receiver.id == contactMe.id
+    val lastMessage = messageInfo.lastMessage
+    val isFromMe = lastMessage.getChildSenderId() == meContact.id
 
     Box(
         modifier = Modifier
@@ -156,10 +172,22 @@ fun ChatScreen(
                 maxLines = 1
             )
 
-            val iconReadPainter = if (isHasRead) {
-                IconResChatDoneAll()
-            } else {
-                IconResChatDone()
+            val iconReadPainter = when (lastMessage.getChildStatus()) {
+                Message.Status.RECEIVED, Message.Status.READ -> {
+                    IconResChatDoneAll()
+                }
+                else -> {
+                    IconResChatDone()
+                }
+            }
+
+            val iconTint = when (lastMessage.getChildStatus()) {
+                Message.Status.READ -> {
+                    Color.Blue
+                }
+                else -> {
+                    Color.Black
+                }
             }
 
             val iconReadVisibility = if (isFromMe) {
@@ -179,10 +207,11 @@ fun ChatScreen(
                         height = Dimension.fillToConstraints
                         visibility = iconReadVisibility
                     }
-                    .aspectRatio(1f / 1f)
+                    .aspectRatio(1f / 1f),
+                tint = iconTint
             )
 
-            val fontWeight = if (isHasRead || isFromMe) {
+            val fontWeight = if (lastMessage.isStatus(Message.Status.READ) || isFromMe) {
                 FontWeight.Light
             } else {
                 FontWeight.Bold
@@ -197,13 +226,58 @@ fun ChatScreen(
                 }
                 .padding(horizontal = 12.dp)
 
-            Text(
-                text = "subtitle",
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = fontWeight,
-                modifier = modifierBody
+            if (messageInfo.isTyping) {
+                Text(
+                    text = "Typing....",
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = fontWeight,
+                    modifier = modifierBody
+                )
+            } else {
+                when (lastMessage) {
+                    is Message.TextMessages -> {
+                        Text(
+                            text = lastMessage.messageBody,
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontWeight = fontWeight,
+                            modifier = modifierBody
+                        )
+                    }
+                    is Message.ImageMessages -> {
+                        Text(
+                            text = "[Image]",
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontWeight = fontWeight,
+                            modifier = modifierBody
+                        )
+                    }
+                    else -> {}
+                }
+            }
+
+            val unreadCountVisibility = if (messageInfo.unreadCount >= 1 && !isFromMe) {
+                Visibility.Visible
+            } else {
+                Visibility.Invisible
+            }
+
+            UnreadCount(
+                modifier = Modifier
+                    .constrainAs(unreadCount) {
+                        end.linkTo(parent.end, margin = 6.dp)
+                        top.linkTo(textName.bottom, margin = 2.dp)
+                        bottom.linkTo(textMessage.bottom, margin = 2.dp)
+                        visibility = unreadCountVisibility
+                        width = Dimension.wrapContent
+                    }
+                    .padding(horizontal = 3.dp),
+                count = messageInfo.unreadCount
             )
 
             /*val imageChat = chatInfo.lastMessage.getImageChat()

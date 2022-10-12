@@ -1,20 +1,36 @@
 package com.utsman.chatingan.services
 
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import com.utsman.chatingan.common.IOScope
+import com.utsman.chatingan.R
 import com.utsman.chatingan.lib.Chatingan
-import kotlinx.coroutines.launch
+import com.utsman.chatingan.lib.Utils
+import com.utsman.chatingan.lib.calculateIntId
+import com.utsman.chatingan.lib.data.model.Message
+import com.utsman.chatingan.lib.ellipsize
+import com.utsman.chatingan.lib.ifTextMessage
+import com.utsman.chatingan.lib.receiver.MessageNotifier
 
 class AppFirebaseService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        println("------- message incoming ------")
-        println(message.data)
-        println("------- message incoming end ------")
 
-        Chatingan.getInstance().bindToFirebaseMessagingServices(message.data)
+        Chatingan.getInstance().bindToFirebaseMessagingServices(message.data) { contact, msg ->
+            msg.ifTextMessage {
+                val builder = NotificationCompat.Builder(this@AppFirebaseService, "chatingan-anu")
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setContentTitle(contact.name)
+                    .setContentText(it.messageBody)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+                val notificationId = msg.getChildId().calculateIntId()
+                NotificationManagerCompat.from(this@AppFirebaseService)
+                    .notify(notificationId, builder.build())
+            }
+        }
     }
 
     override fun onNewToken(token: String) {

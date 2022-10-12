@@ -11,18 +11,27 @@ interface Chatingan {
     fun getConfiguration(): ChatinganConfiguration
     fun getChatinganQr(): ChatinganQr
 
-    fun bindToFirebaseMessagingServices(data: Map<String, String>)
+    fun bindToFirebaseMessagingServices(
+        data: Map<String, String>,
+        onMessageIncoming: (Contact, Message) -> Unit = {_, _ ->}
+    )
+
+    fun updateFcmToken(fcmToken: String)
 
     suspend fun addContact(contact: Contact)
     suspend fun pairContact(contact: Contact)
-    suspend fun getAllContact(): Flow<List<Contact>>
-    suspend fun getContactByEmail(email: String): Flow<Contact>
+    fun getAllContact(): Flow<List<Contact>>
+    fun getContact(contactId: String): Flow<Contact>
+    fun getContactByEmail(email: String): Flow<Contact>
 
     suspend fun getMessagesInfo(): Flow<List<MessageInfo>>
 
-    suspend fun sendMessage(message: Message)
-    suspend fun getMessages(messageInfo: MessageInfo): Flow<List<Message>>
-    suspend fun getLastMessage(messageInfo: MessageInfo): Flow<Message>
+    suspend fun sendMessage(contact: Contact, message: Message)
+    fun getMessages(contact: Contact, withDivider: Boolean = false): Flow<List<Message>>
+    fun getLastMessage(messageInfo: MessageInfo): Flow<Message>
+    suspend fun markMessageIsRead(contact: Contact, message: Message)
+
+    suspend fun setTyping(contact: Contact, isTyping: Boolean)
 
     companion object {
         @Volatile
@@ -30,20 +39,44 @@ interface Chatingan {
 
         data class ChatinganConfigurationBuilder(
             var contact: Contact? = null,
-            var fcmToken: String = "",
             var fcmServerKey: String = ""
         )
 
         fun initialize(context: Context, configuration: ChatinganConfigurationBuilder.() -> Unit) {
-            val currentConfigBuilder = ChatinganConfigurationBuilder().apply(configuration)
-            val currentConfiguration = ChatinganConfiguration(
-                contact = currentConfigBuilder.contact
-                    ?: throw ChatinganException("Contact not found!"),
-                fcmToken = currentConfigBuilder.fcmToken,
-                fcmServerKey = currentConfigBuilder.fcmServerKey
-            )
+            val configBuilder = ChatinganConfigurationBuilder().apply(configuration)
+            val config = ChatinganConfiguration(
+                fcmServerKey = configBuilder.fcmServerKey
+            ).also {
+                val contact = configBuilder.contact
+                if (contact != null) {
+                    it.updateContact(contact)
+                }
+            }
 
-            chatingan = ChatinganImpl(context, currentConfiguration)
+            config.savePref(context)
+            chatingan = ChatinganImpl(context)
+        }
+
+        fun updateConfig(
+            context: Context,
+            configuration: ChatinganConfigurationBuilder.() -> Unit
+        ) {
+            val configBuilder = ChatinganConfigurationBuilder().apply(configuration)
+            val currentConfig = ChatinganConfiguration.getPref(context)
+
+            val newServerKey = configBuilder.fcmServerKey.ifEmpty {
+                currentConfig.fcmServerKey
+            }
+
+            val newConfig = ChatinganConfiguration(newServerKey)
+                .also {
+                    val newContact = configBuilder.contact
+                    if (newContact != null) {
+                        it.updateContact(newContact)
+                    }
+                }
+
+            newConfig.savePref(context)
         }
 
         @JvmStatic
@@ -52,5 +85,16 @@ interface Chatingan {
                 chatingan ?: throw ChatinganException("Chatingan not yet initialized!")
             }
         }
+
+        @JvmStatic
+        fun getSafeInstance(): Chatingan? {
+            return chatingan ?: synchronized(this) {
+                chatingan
+            }
+        }
+
+        /*fun setReceiver(chatinganReceiver: ChatinganReceiver) {
+            receiver = chatinganReceiver
+        }*/
     }
 }

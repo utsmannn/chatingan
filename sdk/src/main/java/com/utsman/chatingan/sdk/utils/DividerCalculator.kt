@@ -10,10 +10,6 @@ import java.time.Instant
 object DividerCalculator {
 
     internal val sdfDay = SimpleDateFormat("DD")
-    private val sdfDate = SimpleDateFormat("EEE dd/MMM/yyyy")
-    private val nowDay by lazy {
-        sdfDay.format(System.currentTimeMillis()).toInt()
-    }
 
     fun calculateDividerChat(oldList: List<MessageChat>): MutableList<MessageChat> {
         val prettyTime = PrettyTime()

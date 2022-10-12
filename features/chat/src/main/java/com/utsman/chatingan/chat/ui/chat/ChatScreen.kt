@@ -1,6 +1,5 @@
 package com.utsman.chatingan.chat.ui.chat
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -10,14 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -28,7 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.Button
-import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
@@ -36,18 +32,13 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
-import androidx.compose.material.TextFieldColors
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.contentColorFor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Camera
-import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.primarySurface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -57,35 +48,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import coil.compose.AsyncImage
 import com.utsman.chatingan.chat.routes.BackPassChat
+import com.utsman.chatingan.common.DateUtils
 import com.utsman.chatingan.common.event.defaultCompose
-import com.utsman.chatingan.common.event.doOnIdle
 import com.utsman.chatingan.common.event.doOnSuccess
 import com.utsman.chatingan.common.ui.component.Gray50
 import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
+import com.utsman.chatingan.lib.Chatingan
+import com.utsman.chatingan.lib.data.model.Contact
+import com.utsman.chatingan.lib.data.model.Message
+import com.utsman.chatingan.lib.utils.ChatinganDividerUtils
 import com.utsman.chatingan.navigation.NavigationProvider
-import com.utsman.chatingan.sdk.Chatingan
-import com.utsman.chatingan.sdk.data.entity.Contact
-import com.utsman.chatingan.sdk.data.entity.MessageChat
-import com.utsman.chatingan.sdk.utils.DateUtils
-import com.utsman.chatingan.sdk.utils.ImageUtils
-import com.utsman.chatingan.sdk.utils.isAllRead
-import com.utsman.chatingan.sdk.utils.isFromMe
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
@@ -113,19 +97,13 @@ fun ChatScreen(
     viewModel: ChatViewModel = getViewModel(),
     backPassChat: BackPassChat = get(),
 ) {
-    val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
-    val chatState by viewModel.chatState.collectAsState()
+    val scope = rememberCoroutineScope()
     val imageResult by viewModel.imageFileState.collectAsState()
     val currentBackPass by backPassChat.currentBack.collectAsState()
-    val context = LocalContext.current
 
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, viewModel) {
-        onDispose {
-            viewModel.dispose()
-        }
-    }
+    val messages by viewModel.getMessages(contact).collectAsState()
+    viewModel.listenForTyping(contact)
 
     Scaffold(
         topBar = {
@@ -155,17 +133,19 @@ fun ChatScreen(
                         viewModel = viewModel,
                         navigationProvider = navigationProvider,
                         onSend = {
-                            //val isImageFile = currentBackPass == ""
-                            //Toast.makeText(context, currentBackPass, Toast.LENGTH_SHORT).show()
                             when (currentBackPass) {
                                 "CAMERA_VIEW" -> {
                                     val imageFile = imageResult.getOrThrow()
-                                    viewModel.sendImage(contact, it, imageFile)
+                                    //viewModel.sendImage(contact, it, imageFile)
                                     //Toast.makeText(context, "image", Toast.LENGTH_SHORT).show()
-                                    backPassChat.clearBackFrom()
+                                    //backPassChat.clearBackFrom()
                                 }
                                 else -> {
-                                    viewModel.sendMessage(contact, it)
+                                    val textMessage = Message.buildTextMessage(contact) {
+                                        message = it
+                                    }
+                                    viewModel.sendMessage(contact, textMessage)
+                                    //viewModel.sendMessage(contact, it)
                                     //Toast.makeText(context, "text", Toast.LENGTH_SHORT).show()
                                 }
                             }
@@ -183,41 +163,26 @@ fun ChatScreen(
                             height = Dimension.fillToConstraints
                         }
                 ) {
-                    chatState.defaultCompose()
-                        .doOnIdle {
-                            viewModel.getChat(contact)
-                        }
+                    messages
+                        .defaultCompose()
                         .doOnSuccess {
-                            viewModel.listenForTyping(contact)
-
                             scope.launch {
-                                scrollState.scrollToItem(it.messages.size)
+                                scrollState.scrollToItem(it.size)
                             }
+
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
                                 state = scrollState,
                                 content = {
-                                    items(it.messages) { item ->
-                                        if (item.type == MessageChat.Type.DIVIDER) {
-                                            DividerScreen(messageChat = item)
-                                        } else {
-                                            viewModel.readChat(contact, item)
-                                            MessageItem(messageChat = item)
+                                    items(it) { item ->
+                                        when (item) {
+                                            is Message.TextMessages -> TextMessageItem(message = item) {
+                                                viewModel.markAsRead(contact, item)
+                                            }
+                                            is Message.DividerMessage -> DividerItem(message = item)
+                                            else -> Column {}
                                         }
                                     }
-
-                                    /*if (imageResult.isSuccess) {
-                                        val imageFile = imageResult.getOrThrow()
-                                        item {
-                                            AsyncImage(
-                                                model = imageFile,
-                                                contentDescription = "",
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier.size(120.dp)
-                                            )
-                                        }
-                                    }*/
-
                                 })
                         }
                 }
@@ -226,14 +191,13 @@ fun ChatScreen(
     )
 }
 
-
 @Composable
 fun TopBarChat(
     contact: Contact,
     viewModel: ChatViewModel,
     onClick: () -> Unit
 ) {
-    val receiverTypingState by viewModel.receiverTyping.collectAsState()
+    val receiverTypingState by viewModel.getTyping(contact.id).collectAsState(false)
 
     val backgroundColor = MaterialTheme.colors.primarySurface
     Surface(
@@ -255,8 +219,8 @@ fun TopBarChat(
                     Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "back")
                 }
                 AsyncImage(
-                    model = contact.image,
-                    contentDescription = contact.id,
+                    model = contact.imageUrl,
+                    contentDescription = "",
                     modifier = Modifier
                         .size(30.dp)
                         .clip(CircleShape)
@@ -347,10 +311,10 @@ fun BottomBarChat(
 }
 
 @Composable
-fun MessageItem(
-    messageChat: MessageChat
+fun TextMessageItem(
+    message: Message.TextMessages,
+    onRead: () -> Unit
 ) {
-
     ConstraintLayout(
         modifier = Modifier
             .fillMaxWidth()
@@ -361,8 +325,12 @@ fun MessageItem(
         val gh1 = createGuidelineFromStart(0.3f)
         val gh2 = createGuidelineFromEnd(0.3f)
 
-        val isHasRead = messageChat.isAllRead()
-        val isFromMe = messageChat.isFromMe(Chatingan.getInstance().config)
+        val messageStatus = message.status
+        val isFromMe = message.senderId == Chatingan.getInstance().getConfiguration().contact.id
+
+        if (!isFromMe && messageStatus != Message.Status.READ) {
+            onRead.invoke()
+        }
 
         val containerModifier = if (isFromMe) {
             Modifier
@@ -418,7 +386,7 @@ fun MessageItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = DateUtils.toReadable(messageChat.lastUpdate),
+                        text = DateUtils.toReadable(message.date),
                         fontSize = 11.sp,
                         textAlign = TextAlign.End
                     )
@@ -430,10 +398,22 @@ fun MessageItem(
                     }
 
                     if (isFromMe) {
-                        val iconReadPainter = if (isHasRead) {
-                            IconResChatDoneAll()
-                        } else {
-                            IconResChatDone()
+                        val iconReadPainter = when (message.getChildStatus()) {
+                            Message.Status.RECEIVED, Message.Status.READ -> {
+                                IconResChatDoneAll()
+                            }
+                            else -> {
+                                IconResChatDone()
+                            }
+                        }
+
+                        val iconTint = when (message.getChildStatus()) {
+                            Message.Status.READ -> {
+                                Color.Blue
+                            }
+                            else -> {
+                                Color.Black
+                            }
                         }
 
                         Icon(
@@ -441,12 +421,11 @@ fun MessageItem(
                             contentDescription = "",
                             modifier = Modifier
                                 .size(sizeVisibility)
-                                .padding(start = 3.dp)
+                                .padding(start = 3.dp),
+                            tint = iconTint
                         )
                     }
                 }
-
-                val imageChat = messageChat.getImageChat()
 
                 val modifierBody = Modifier
                     .constrainAs(messageText) {
@@ -456,29 +435,40 @@ fun MessageItem(
                         bottom.linkTo(indicatorRow.top)
                     }
 
-                if (imageChat != null) {
-                    val bitmap = ImageUtils.stringToBitmap(imageChat.encodedBlur)
-                    AsyncImage(
-                        model = bitmap,
-                        contentDescription = "" ,
-                        modifier = modifierBody
-                            .widthIn(min = 60.dp)
-                            .padding(horizontal = 6.dp, vertical = 3.dp)
-                    )
-                } else {
-                    Text(
-                        text = messageChat.messageBody,
-                        modifier = modifierBody
-                            .widthIn(min = 60.dp)
-                            .padding(horizontal = 6.dp, vertical = 3.dp)
-                    )
-                }
+                Text(
+                    text = message.messageBody,
+                    modifier = modifierBody
+                        .widthIn(min = 60.dp)
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                )
             }
         }
     }
 }
 
 @Composable
+fun DividerItem(message: Message.DividerMessage) {
+    Column(
+        modifier = Modifier
+            .wrapContentHeight()
+            .fillMaxWidth()
+            .padding(6.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = ChatinganDividerUtils.generateDateDividerText(message.superDate),
+            modifier = Modifier
+                .background(Gray50, shape = RoundedCornerShape(6.dp))
+                .padding(horizontal = 6.dp, vertical = 3.dp),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Light
+        )
+    }
+}
+
+
+/*@Composable
 fun DividerScreen(messageChat: MessageChat) {
     Column(
         modifier = Modifier
@@ -503,4 +493,4 @@ fun DividerScreen(messageChat: MessageChat) {
 @Composable
 fun PreviewChat() {
     ChatScreen(contact = Contact())
-}
+}*/

@@ -5,17 +5,14 @@ import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.pair.ContactPairListener
 
 class ChatinganQrImpl(
-    private val configuration: ChatinganConfiguration,
+    private val contact: Contact,
     private val onRequest: suspend (Contact, ChatinganQrImpl) -> Boolean
 ) : ChatinganQr {
 
-    //private var pairListeners: MutableList<ContactPairListener> = mutableListOf()
     private var pairListener: ContactPairListener? = null
 
     override fun generateQrContact(): Bitmap {
-        val contact = configuration.contact
-        val pairData = DataMapper.mapContactToPairData(contact)
-        val contentJson = pairData.toJson()
+        val contentJson = contact.toJson()
         return ChatinganQrUtils.generateQrBitmap(content = contentJson)
     }
 
@@ -24,12 +21,10 @@ class ChatinganQrImpl(
     }
 
     override fun setPairListener(pairListener: ContactPairListener) {
-        //pairListeners.add(pairListener)
         this.pairListener = pairListener
     }
 
     internal fun setPairListenerSuccess(contact: Contact) {
-        //pairListeners.forEach { it.onPairSuccess(contact) }
         pairListener?.onPairSuccess(contact)
     }
 

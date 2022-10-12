@@ -3,13 +3,10 @@ package com.utsman.chatingan.lib
 import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.entity.ContactEntity
 import com.utsman.chatingan.lib.data.entity.MessageEntity
-import com.utsman.chatingan.lib.data.entity.MessageInfoEntity
-import com.utsman.chatingan.lib.data.transaction.MessagesInfoAndReceiverContact
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
-import com.utsman.chatingan.lib.data.pair.ContactPair
-import java.util.UUID
+import com.utsman.chatingan.lib.data.transaction.ContactAndLastMessage
 
 object DataMapper {
 
@@ -20,6 +17,9 @@ object DataMapper {
             email = contact.email,
             imageUrl = contact.imageUrl,
             fcmToken = contact.fcmToken,
+            lastMessageId = contact.lastMessageId,
+            isTyping = false,
+            lastMessageUpdate = contact.lastMessageUpdate.toLong(),
             lastUpdate = contact.lastUpdate.toLong()
         )
     }
@@ -31,15 +31,10 @@ object DataMapper {
             email = entity.email,
             imageUrl = entity.imageUrl,
             fcmToken = entity.fcmToken,
+            lastMessageId = entity.lastMessageId,
+            isTyping = entity.isTyping,
+            lastMessageUpdate = entity.lastMessageUpdate.toDate(),
             lastUpdate = entity.lastUpdate.toDate()
-        )
-    }
-
-    fun mapMessageInfoToEntity(messageInfo: MessageInfo): MessageInfoEntity {
-        return MessageInfoEntity(
-            id = messageInfo.id,
-            receiverId = messageInfo.receiver.id,
-            lastUpdate = messageInfo.lastUpdate.toLong()
         )
     }
 
@@ -47,7 +42,6 @@ object DataMapper {
         return when (message) {
             is Message.TextMessages -> MessageEntity(
                 id = message.id,
-                messageInfoId = message.messageInfoId,
                 type = Message.Type.TEXT.name,
                 senderId = message.senderId,
                 receiverId = message.receiverId,
@@ -64,7 +58,6 @@ object DataMapper {
             Message.Type.TEXT -> {
                 Message.TextMessages(
                     id = entity.id,
-                    messageInfoId = entity.messageInfoId,
                     senderId = entity.senderId,
                     receiverId = entity.receiverId,
                     status = entity.status.uppercase().run { Message.Status.valueOf(this) },
@@ -76,36 +69,30 @@ object DataMapper {
         }
     }
 
-    fun mapMessagesInfoAndReceiverContactToMessagesInfo(
-        messagesInfoAndReceiverContact: MessagesInfoAndReceiverContact
+    fun mapContactAndLastMessageToMessageInfo(
+        contactAndLastMessage: ContactAndLastMessage,
+        unreadCount: Int
     ): MessageInfo {
-        val messageInfo = messagesInfoAndReceiverContact.messageInfoEntities.firstOrNull()
-            ?: throw ChatinganException("Messages Info is null!")
-        val receiver = messagesInfoAndReceiverContact.receiverEntity
+        val receiverEntity = contactAndLastMessage.contactEntity
+        val receiver = mapEntityToContact(receiverEntity)
+        val lastMessage = contactAndLastMessage.lastMessageEntity
+            .lastOrNull()
+            ?.run {
+                mapEntityToMessage(this)
+            } ?: Message.emptyTextMessage()
+        val lastMessageUpdate = when (lastMessage) {
+            is Message.TextMessages -> lastMessage.date
+            is Message.ImageMessages -> lastMessage.date
+            is Message.DividerMessage -> lastMessage.date
+        }
+
         return MessageInfo(
-            id = messageInfo.id,
-            receiver = receiver.run { mapEntityToContact(this) },
-            lastUpdate = messageInfo.lastUpdate.toDate()
-        )
-    }
-
-    fun mapContactToPairData(contact: Contact): ContactPair {
-        return ContactPair(
-            name = contact.name,
-            email = contact.email,
-            imageUrl = contact.imageUrl,
-            fcmToken = contact.fcmToken
-        )
-    }
-
-    fun mapContactPairToContact(contactPair: ContactPair): Contact {
-        return Contact(
-            id = UUID.randomUUID().toString(),
-            name = contactPair.name,
-            email = contactPair.email,
-            imageUrl = contactPair.imageUrl,
-            fcmToken = contactPair.fcmToken,
-            lastUpdate = Utils.now().toDate()
+            id = receiver.id,
+            receiver = receiver,
+            lastMessage = lastMessage,
+            lastUpdate = lastMessageUpdate,
+            unreadCount = unreadCount,
+            isTyping = receiverEntity.isTyping
         )
     }
 

@@ -8,7 +8,6 @@ import java.util.*
 data class MessageEntity(
     @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
-    val messageInfoId: String,
     val type: String,
     val senderId: String,
     val receiverId: String,

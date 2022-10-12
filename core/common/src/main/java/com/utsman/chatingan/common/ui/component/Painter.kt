@@ -14,3 +14,8 @@ fun IconResChatDone() : Painter {
 fun IconResChatDoneAll() : Painter {
     return painterResource(id = R.drawable.ic_round_done_all_24)
 }
+
+@Composable
+fun IconResChatDoneAllRead() : Painter {
+    return painterResource(id = R.drawable.ic_round_done_read_24)
+}

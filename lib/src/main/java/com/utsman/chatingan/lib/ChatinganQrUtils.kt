@@ -5,7 +5,6 @@ import android.graphics.Color
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.utsman.chatingan.lib.data.model.Contact
-import com.utsman.chatingan.lib.data.pair.ContactPair
 
 object ChatinganQrUtils {
 
@@ -32,7 +31,6 @@ object ChatinganQrUtils {
     }
 
     fun generateContactFromPair(content: String): Contact {
-        val contactPair: ContactPair = Utils.convertFromJson(content)
-        return DataMapper.mapContactPairToContact(contactPair)
+        return Utils.convertFromJson(content)
     }
 }

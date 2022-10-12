@@ -6,10 +6,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.utsman.chatingan.lib.data.entity.ContactEntity
 import com.utsman.chatingan.lib.data.entity.MessageEntity
-import com.utsman.chatingan.lib.data.entity.MessageInfoEntity
 
 @Database(
-    entities = [ContactEntity::class, MessageInfoEntity::class, MessageEntity::class],
+    entities = [ContactEntity::class, MessageEntity::class],
     version = 1
 )
 abstract class ChatinganDatabase : RoomDatabase() {

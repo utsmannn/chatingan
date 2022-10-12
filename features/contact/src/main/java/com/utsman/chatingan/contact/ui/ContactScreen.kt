@@ -1,8 +1,5 @@
 package com.utsman.chatingan.contact.ui
 
-import androidx.compose.animation.Animatable
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,12 +16,9 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.PersonAdd
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -48,8 +42,11 @@ import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.data.model.Contact
-import com.utsman.chatingan.lib.data.pair.ContactPairListener
+import com.utsman.chatingan.lib.data.model.MessageInfo
 import com.utsman.chatingan.navigation.NavigationProvider
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 
@@ -58,25 +55,7 @@ fun ContactScreen(
     navigationProvider: NavigationProvider = get(),
     viewModel: ContactViewModel = getViewModel()
 ) {
-    val contact by viewModel.contactState.collectAsState()
-
-    var newContactEmail by remember {
-        mutableStateOf("")
-    }
-
-    val backgroundColorAnimate = remember { Animatable(Color.White) }
-
-   /* Chatingan
-        .getInstance()
-        .getChatinganQr()
-        .addPairListener(object : ContactPairListener {
-            override fun onPairSuccess(contact: Contact) {
-                newContactEmail = contact.email
-            }
-
-            override fun onPairFailed(throwable: Throwable) {
-            }
-        })*/
+    val contact by viewModel.getContacts().collectAsState()
 
     Scaffold(
         floatingActionButton = {
@@ -105,20 +84,10 @@ fun ContactScreen(
                     .doOnSuccess { contacts ->
                         ColumnCenter {
                             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(contacts) {
-                                    val modifier = if (it.email == newContactEmail) {
-                                        LaunchedEffect(Unit) {
-                                            backgroundColorAnimate.animateTo(Color.Red, animationSpec = tween(1000))
-                                            backgroundColorAnimate.animateTo(Color.Gray, animationSpec = tween(1000))
-                                        }
-                                        Modifier.background(backgroundColorAnimate.value)
-                                    } else {
-                                        Modifier
-                                    }
+                                items(contacts) { contact ->
                                     ContactItemScreen(
-                                        modifier = modifier,
-                                        contact = it,
-                                        onClick = { contact ->
+                                        contact = contact,
+                                        onClick = {
                                             navigationProvider.navigateToChat(contact)
                                         }
                                     )
@@ -135,14 +104,15 @@ fun ContactScreen(
 fun ContactItemScreen(
     modifier: Modifier = Modifier,
     contact: Contact,
-    onClick: (Contact) -> Unit
+    onClick: () -> Unit
 ) {
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .wrapContentHeight()
             .clickableRipple {
-                onClick.invoke(contact)
+                onClick.invoke()
             }
     ) {
         ConstraintLayout(

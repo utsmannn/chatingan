@@ -1,16 +1,18 @@
 package com.utsman.chatingan.lib.data.firebase
 
+import com.utsman.chatingan.lib.receiver.MessageNotifier
+
 internal data class FirebaseMessageRequest(
     var to: String,
-    var data: FirebaseNotification
+    var data: MessageNotifier
 ) {
 
     companion object {
         fun createFromMessage(
             token: String,
-            notification: FirebaseNotification.() -> Unit
+            notification: MessageNotifier.() -> Unit
         ): FirebaseMessageRequest {
-            val currentNotification = FirebaseNotification().apply(notification)
+            val currentNotification = MessageNotifier().apply(notification)
             return FirebaseMessageRequest(
                 to = token,
                 data = currentNotification
