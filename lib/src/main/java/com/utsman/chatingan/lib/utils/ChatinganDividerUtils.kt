@@ -8,17 +8,21 @@ import java.util.*
 object ChatinganDividerUtils {
     private val sdfDay = SimpleDateFormat("DD")
 
-    fun calculateDividerChat(oldList: List<Message>): MutableList<Message> {
-        val prettyTime = PrettyTime()
-
+    fun calculateDividerChat(oldList: List<Message>, asReserved: Boolean = false): MutableList<Message> {
         val newList: MutableList<Message> = mutableListOf()
         val iterator = oldList.iterator()
         var currentDay = 0
         for (item in iterator) {
             val day = sdfDay.format(item.superDate).toInt()
-            if (day > currentDay) {
+            val indicator = if (asReserved) {
+                day < currentDay
+            } else {
+                day > currentDay
+            }
+
+            if (indicator) {
                 currentDay = day
-                val divider = Message.DividerMessage(item.superDate)
+                val divider = Message.DividerMessage(item.superDate, item)
                 newList.add(divider)
             }
 
@@ -33,7 +37,7 @@ object ChatinganDividerUtils {
         val messageToday = sdfDay.format(date.time).toInt()
 
         val format = when (currentDay) {
-            messageToday -> {
+            (messageToday + 1) -> {
                 "Today"
             }
             else -> {

@@ -1,28 +1,38 @@
 package com.utsman.chatingan.lib
 
 import android.content.Context
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.utsman.chatingan.common.IOScope
 import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.entity.ContactEntity
 import com.utsman.chatingan.lib.data.firebase.FirebaseMessageRequest
-import com.utsman.chatingan.lib.receiver.MessageNotifier
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
 import com.utsman.chatingan.lib.data.model.MessageReport
 import com.utsman.chatingan.lib.database.ChatinganDao
 import com.utsman.chatingan.lib.database.ChatinganDatabase
+import com.utsman.chatingan.lib.paging.MessagePagingSources
+import com.utsman.chatingan.lib.receiver.MessageNotifier
 import com.utsman.chatingan.lib.services.FirebaseWebServices
 import com.utsman.chatingan.lib.utils.ChatinganDividerUtils
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.util.*
 
 class ChatinganImpl(
     private val context: Context
@@ -45,6 +55,10 @@ class ChatinganImpl(
     override fun getConfiguration(): ChatinganConfiguration {
         return ChatinganConfiguration.getPref(context)
     }
+
+    private val newMessageFlow: MutableStateFlow<Pair<Contact, Message>?> = MutableStateFlow(null)
+    private val sdfDay = SimpleDateFormat("DD")
+    private var nowDay = sdfDay.format(Date.from(Instant.now())).toInt()
 
     private val _chatinganQr by lazy {
         ChatinganQrImpl(getConfiguration().contact) { contactPaired, qrImpl ->
@@ -131,6 +145,16 @@ class ChatinganImpl(
         }
     }
 
+    override suspend fun onMessageUpdate(contact: Contact, newMessage: suspend (Message?) -> Unit) {
+        newMessageFlow.filterNotNull().collect { (con, msg) ->
+            if (contact.id == con.id) {
+                newMessage.invoke(msg)
+            } else {
+                newMessageFlow.value = null
+            }
+        }
+    }
+
     override suspend fun addContact(contact: Contact) {
         val entity = DataMapper.mapContactToEntity(contact)
         if (chatinganDao.isContactExist(entity.email)) throw ChatinganException("Contact exists")
@@ -193,6 +217,7 @@ class ChatinganImpl(
     }
 
     override suspend fun sendMessage(contact: Contact, message: Message) {
+        newMessageFlow.value = Pair(contact, message)
         when (message) {
             is Message.TextMessages -> {
                 sendTextMessage(contact, message)
@@ -203,7 +228,11 @@ class ChatinganImpl(
         }
     }
 
-    override fun getMessages(contact: Contact, withDivider: Boolean): Flow<List<Message>> {
+    override fun getAllMessages(
+        contact: Contact,
+        withDivider: Boolean,
+        asReversed: Boolean
+    ): Flow<List<Message>> {
         return chatinganDao.getAllMessage(contact.id)
             .map { messages ->
                 messages.map { entity ->
@@ -217,6 +246,50 @@ class ChatinganImpl(
                 }
             }
             .distinctUntilChanged()
+    }
+
+    override fun getAllMessage(
+        contact: Contact,
+        withDivider: Boolean,
+        size: Int,
+        isOnlySnapshot: Boolean
+    ): Flow<PagingData<Message>> {
+        newMessageFlow.value = null
+        val pager = Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false,
+            ),
+            pagingSourceFactory = {
+                if (isOnlySnapshot) {
+                    MessagePagingSources(contact, chatinganDao)
+                } else {
+                    chatinganDao.getAllMessagePagedSources(contact.id)
+                }
+            }
+        )
+
+        return pager
+            .flow
+            .distinctUntilChanged()
+            .map {
+                it.map { entity ->
+                    /*if (withDivider) {
+                        val currentDay = sdfDay.format(entity.date.toDate()).toInt()
+                        if (currentDay < nowDay) {
+                            DataMapper.mapEntityToMessageDivider(entity)
+                        } else {
+                            DataMapper.mapEntityToMessage(entity)
+                        }.also {
+                            nowDay = currentDay
+                        }
+                    } else {
+                        DataMapper.mapEntityToMessage(entity)
+                    }*/
+                    DataMapper.mapEntityToMessage(entity)
+                }
+            }
+
     }
 
     override fun getLastMessage(messageInfo: MessageInfo): Flow<Message> {
@@ -309,6 +382,8 @@ class ChatinganImpl(
                 )
                 chatinganDao.updateContact(newContactEntity)
                 sendToServices(textMessage.id, onMessageIncoming)
+
+                newMessageFlow.value = Pair(contact, textMessage)
             }
             Message.Type.IMAGE -> {
 
@@ -364,6 +439,21 @@ class ChatinganImpl(
         if (notification.type != MessageNotifier.NotificationType.MESSAGE_REPORT) return
         val messageReport: MessageReport = Utils.convertFromJson(notification.body)
         chatinganDao.updateMessageStatus(messageReport.messageId, messageReport.status.name)
+
+        val messageEntity = chatinganDao.getMessageById(messageReport.messageId)
+        val senderId = messageEntity.senderId
+        val contactEntity = if (senderId != config.contact.id) {
+            chatinganDao.getContactById(senderId)
+        } else {
+            chatinganDao.getContactById(messageEntity.receiverId)
+        }
+
+        if (contactEntity != null) {
+            val contact = DataMapper.mapEntityToContact(contactEntity)
+            val message = DataMapper.mapEntityToMessage(messageEntity)
+
+            newMessageFlow.value = Pair(contact, message)
+        }
     }
 
     private suspend fun updateContact(notification: MessageNotifier) {

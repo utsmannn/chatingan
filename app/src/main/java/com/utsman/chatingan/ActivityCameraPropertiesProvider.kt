@@ -1,12 +1,11 @@
 package com.utsman.chatingan
 
 import androidx.activity.ComponentActivity
-import androidx.appcompat.app.AppCompatActivity
-import com.utsman.chatingan.common.ActivityConnector
+import com.utsman.chatingan.navigation.ActivityCameraProperties
 import java.io.File
 import java.util.concurrent.Executor
 
-class ActivityConnectorProvider(private val builder: Builder) : ActivityConnector {
+class ActivityCameraPropertiesProvider(private val builder: Builder) : ActivityCameraProperties {
     override val currentActivity: ComponentActivity
         get() = builder.currentActivity
 
@@ -21,8 +20,8 @@ class ActivityConnectorProvider(private val builder: Builder) : ActivityConnecto
         val cameraExecutor: Executor
     ) {
 
-        fun create(): ActivityConnector {
-            return ActivityConnectorProvider(this)
+        fun create(): ActivityCameraProperties {
+            return ActivityCameraPropertiesProvider(this)
         }
     }
 }

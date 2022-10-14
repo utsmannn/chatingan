@@ -1,30 +1,32 @@
 package com.utsman.chatingan.chat.repository
 
-import com.utsman.chatingan.common.event.FlowEvent
-import com.utsman.chatingan.common.event.collectToStateEvent
-import com.utsman.chatingan.common.event.defaultStateEvent
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 
 class ChatRepositoryImpl : ChatRepository {
     override fun getContact(contactId: String): Flow<Contact> {
         return Chatingan.getInstance().getContact(contactId)
     }
 
-    override fun getMessages(scope: CoroutineScope, contact: Contact): FlowEvent<List<Message>> {
-        val messages = defaultStateEvent<List<Message>>()
-        scope.launch {
-            Chatingan.getInstance()
-                .getMessages(contact, true)
-                .distinctUntilChanged()
-                .collectToStateEvent(messages)
-        }
-        return messages
+    override fun getMessages(
+        scope: CoroutineScope,
+        contact: Contact
+    ): Flow<PagingData<Message>> {
+        val newScope = scope + Dispatchers.IO
+        return Chatingan
+            .getInstance()
+            .getAllMessage(contact, true, 10, true)
+            .distinctUntilChanged()
+            .cachedIn(newScope)
     }
 
     override fun setTypingStatus(scope: CoroutineScope, contact: Contact, isTyping: Boolean) {

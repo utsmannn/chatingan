@@ -1,11 +1,10 @@
-package com.utsman.chatingan.common
+package com.utsman.chatingan.navigation
 
 import androidx.activity.ComponentActivity
-import androidx.appcompat.app.AppCompatActivity
 import java.io.File
 import java.util.concurrent.Executor
 
-interface ActivityConnector {
+interface ActivityCameraProperties {
 
     val currentActivity: ComponentActivity
     val outputCameraDirectory: File

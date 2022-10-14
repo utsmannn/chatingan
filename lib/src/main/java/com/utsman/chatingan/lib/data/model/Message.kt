@@ -1,5 +1,7 @@
 package com.utsman.chatingan.lib.data.model
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.Utils
 import com.utsman.chatingan.lib.toDate
@@ -25,14 +27,13 @@ sealed class Message(val superDate: Date) {
         val senderId: String,
         val receiverId: String,
         val status: Status,
-        val caption: String,
-        val imageUrl: String,
-        val thumbUrl: String,
+        val imageBody: MessageImageBody,
         val date: Date
     ) : Message(date)
 
     data class DividerMessage(
-        val date: Date
+        val date: Date,
+        val message: Message
     ) : Message(date)
 
     enum class Type {
@@ -47,10 +48,22 @@ sealed class Message(val superDate: Date) {
         var message: String = ""
     )
 
-    data class MessageImageBuilder(
+    data class MessageImageBody(
         var imageUrl: String = "",
-        var thumbUrl: String = ""
-    )
+        var thumbUrl: String = "",
+        var caption: String = ""
+    ) {
+        companion object {
+            private val type = object : TypeToken<MessageImageBody>() {}.type
+            fun fromStringBody(body: String): MessageImageBody {
+                return Gson().fromJson(body, type)
+            }
+        }
+
+        fun toStringBody(): String {
+            return Gson().toJson(this, type)
+        }
+    }
 
     companion object {
 
@@ -114,7 +127,9 @@ sealed class Message(val superDate: Date) {
             is ImageMessages -> {
                 this.id
             }
-            is DividerMessage -> "divider"
+            is DividerMessage -> {
+                this.message.getChildId()
+            }
         }
     }
 

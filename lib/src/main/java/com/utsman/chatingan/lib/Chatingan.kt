@@ -1,6 +1,7 @@
 package com.utsman.chatingan.lib
 
 import android.content.Context
+import androidx.paging.PagingData
 import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
@@ -13,10 +14,11 @@ interface Chatingan {
 
     fun bindToFirebaseMessagingServices(
         data: Map<String, String>,
-        onMessageIncoming: (Contact, Message) -> Unit = {_, _ ->}
+        onMessageIncoming: (Contact, Message) -> Unit = { _, _ -> }
     )
 
     fun updateFcmToken(fcmToken: String)
+    suspend fun onMessageUpdate(contact: Contact, newMessage: suspend (Message?) -> Unit)
 
     suspend fun addContact(contact: Contact)
     suspend fun pairContact(contact: Contact)
@@ -25,12 +27,23 @@ interface Chatingan {
     fun getContactByEmail(email: String): Flow<Contact>
 
     suspend fun getMessagesInfo(): Flow<List<MessageInfo>>
-
     suspend fun sendMessage(contact: Contact, message: Message)
-    fun getMessages(contact: Contact, withDivider: Boolean = false): Flow<List<Message>>
+
+    fun getAllMessages(
+        contact: Contact,
+        withDivider: Boolean = false,
+        asReversed: Boolean = false
+    ): Flow<List<Message>>
+
+    fun getAllMessage(
+        contact: Contact,
+        withDivider: Boolean,
+        size: Int = 20,
+        isOnlySnapshot: Boolean = true
+    ): Flow<PagingData<Message>>
+
     fun getLastMessage(messageInfo: MessageInfo): Flow<Message>
     suspend fun markMessageIsRead(contact: Contact, message: Message)
-
     suspend fun setTyping(contact: Contact, isTyping: Boolean)
 
     companion object {

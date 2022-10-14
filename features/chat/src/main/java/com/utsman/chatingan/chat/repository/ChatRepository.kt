@@ -1,6 +1,6 @@
 package com.utsman.chatingan.chat.repository
 
-import com.utsman.chatingan.common.event.FlowEvent
+import androidx.paging.PagingData
 import com.utsman.chatingan.common.koin.KoinInjector
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
@@ -11,9 +11,10 @@ import org.koin.dsl.module
 
 interface ChatRepository {
     fun getContact(contactId: String): Flow<Contact>
-    fun getMessages(scope: CoroutineScope, contact: Contact): FlowEvent<List<Message>>
+    fun getMessages(scope: CoroutineScope, contact: Contact): Flow<PagingData<Message>>
     fun setTypingStatus(scope: CoroutineScope, contact: Contact, isTyping: Boolean)
     fun sendMessage(scope: CoroutineScope, contact: Contact, message: Message)
+
     fun markAsRead(scope: CoroutineScope, contact: Contact, message: Message)
 
     companion object : KoinInjector {

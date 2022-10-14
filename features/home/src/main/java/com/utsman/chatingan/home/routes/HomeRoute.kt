@@ -1,8 +1,10 @@
 package com.utsman.chatingan.home.routes
 
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import com.utsman.chatingan.common.ui.component.animateComposable
 import com.utsman.chatingan.navigation.NavigationRouteModule
 import com.utsman.chatingan.navigation.Route
 import com.utsman.chatingan.home.ui.HomeScreen
@@ -15,12 +17,13 @@ object HomeRoute : NavigationRouteModule {
     override val parent: String
         get() = "home"
 
+    @OptIn(ExperimentalAnimationApi::class)
     override fun registerNavGraph(navGraphBuilder: NavGraphBuilder) {
         navGraphBuilder.navigation(startDestination = Home.getValue(), route = parent) {
-            composable(Home.getValue()) {
+            animateComposable(Home.getValue()) {
                 HomeScreen()
             }
-            composable(Profile.getValue()) {
+            animateComposable(Profile.getValue()) {
                 ProfileScreen()
             }
         }

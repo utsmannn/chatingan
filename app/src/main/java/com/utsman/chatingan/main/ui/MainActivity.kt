@@ -10,18 +10,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.firebase.FirebaseApp
-import com.utsman.chatingan.ActivityConnectorProvider
+import com.utsman.chatingan.ActivityCameraPropertiesProvider
 import com.utsman.chatingan.R
 import com.utsman.chatingan.auth.component.AuthComponent
 import com.utsman.chatingan.auth.component.authComponentBuilder
-import org.koin.core.context.loadKoinModules
-import org.koin.dsl.module
+import com.utsman.chatingan.lib.Chatingan
+import com.utsman.chatingan.navigation.ActivityCameraProperties
+import com.utsman.chatingan.navigation.ActivityProvider
+import com.utsman.chatingan.navigation.LocalActivityProvider
 import java.io.File
-import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -33,12 +33,22 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val chatingan = Chatingan.getInstance()
+        val cameraProperties = buildCameraProperties()
+
+        val activityProvider = ActivityProvider().also {
+            it.setChatingan(chatingan)
+            it.setCameraProperties(cameraProperties)
+        }
+
         setContent {
-            ChatinganApp(authComponent = authComponent)
+            CompositionLocalProvider(LocalActivityProvider provides activityProvider) {
+                ChatinganApp(authComponent = authComponent)
+            }
         }
 
         requestCameraPermission()
-        createActivityConnector()
         createNotificationChannel()
     }
 
@@ -80,18 +90,12 @@ class MainActivity : ComponentActivity() {
         return if (mediaDir != null && mediaDir.exists()) mediaDir else filesDir
     }
 
-    private fun createActivityConnector() {
-        val activityConnector = ActivityConnectorProvider.Builder(
+    private fun buildCameraProperties(): ActivityCameraProperties {
+        return ActivityCameraPropertiesProvider.Builder(
             outputCameraDirectory = getOutputDirectory(),
             cameraExecutor = cameraExecutor,
             currentActivity = this
         ).create()
-
-        module {
-            single { activityConnector }
-        }.run {
-            loadKoinModules(this)
-        }
     }
 
     override fun onDestroy() {

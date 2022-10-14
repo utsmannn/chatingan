@@ -48,7 +48,7 @@ internal interface FirebaseWebServices {
 
             val okHttp = OkHttpClient()
                 .newBuilder()
-                .addInterceptor(loggingInterceptor)
+                //.addInterceptor(loggingInterceptor)
                 .addInterceptor(authInterceptor)
                 .build()
 

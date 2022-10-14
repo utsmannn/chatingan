@@ -1,7 +1,6 @@
 package com.utsman.chatingan.chat.ui.camera
 
 import android.content.Context
-import android.net.Uri
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -36,7 +35,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.utsman.chatingan.chat.routes.BackPassChat
-import com.utsman.chatingan.common.ActivityConnector
+import com.utsman.chatingan.navigation.ActivityCameraProperties
+import com.utsman.chatingan.navigation.LocalActivityProvider
 import com.utsman.chatingan.navigation.NavigationProvider
 import id.zelory.compressor.Compressor
 import id.zelory.compressor.constraint.default
@@ -55,7 +55,6 @@ import kotlin.coroutines.resume
 fun CameraScreen(
     navigationProvider: NavigationProvider = get(),
     viewModel: CameraViewModel = getViewModel(),
-    activityConnector: ActivityConnector = get(),
     backPassChat: BackPassChat = get()
 ) {
 
@@ -63,6 +62,7 @@ fun CameraScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
+    val activityCameraProperties = LocalActivityProvider.current.activityCameraProperties()
 
     val preview = Preview.Builder().build()
     val previewView = remember { PreviewView(context) }
@@ -108,8 +108,8 @@ fun CameraScreen(
                     takePhoto(
                         filenameFormat = "yyyy-MM-dd-HH-mm-ss-SSS",
                         imageCapture = imageCapture,
-                        outputDirectory = activityConnector.outputCameraDirectory,
-                        executor = activityConnector.cameraExecutor,
+                        outputDirectory = activityCameraProperties.outputCameraDirectory,
+                        executor = activityCameraProperties.cameraExecutor,
                         onImageCaptured = {
                             coroutineScope.launch {
                                 val compressedFile = compressedPhoto(context, it)

@@ -1,5 +1,6 @@
 package com.utsman.chatingan.lib.database
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -8,6 +9,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.utsman.chatingan.lib.data.entity.ContactEntity
 import com.utsman.chatingan.lib.data.entity.MessageEntity
+import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.transaction.ContactAndLastMessage
 import com.utsman.chatingan.lib.data.transaction.MessageAndSender
@@ -64,8 +66,14 @@ interface ChatinganDao {
     @Query("DELETE FROM MessageEntity WHERE id = :messageId")
     suspend fun deleteMessage(messageId: String)
 
+    @Query("SELECT * FROM MessageEntity WHERE id = :messageId")
+    suspend fun getMessageById(messageId: String): MessageEntity
+
     @Query("SELECT * FROM MessageEntity WHERE :receiverId IN (receiverId, senderId) ORDER BY date")
     fun getAllMessage(receiverId: String): Flow<List<MessageEntity>>
+
+    @Query("SELECT * FROM MessageEntity WHERE :receiverId IN (receiverId, senderId) ORDER BY date DESC")
+    fun getAllMessageReversed(receiverId: String): Flow<List<MessageEntity>>
 
     @Query("SELECT * FROM MessageEntity WHERE receiverId = :receiverId")
     fun getMessagesFromReceiver(receiverId: String): Flow<List<MessageEntity>>
@@ -88,4 +96,26 @@ interface ChatinganDao {
 
     @Query("SELECT * FROM MessageEntity WHERE :contactId IN (receiverId, senderId) AND status = :statusString ORDER BY date")
     fun getMessagesByStatus(contactId: String, statusString: String): Flow<List<MessageEntity>>
+
+    @Query(
+        "SELECT * FROM MessageEntity WHERE :receiverId IN (receiverId, senderId) ORDER BY date DESC " +
+                "LIMIT :limit OFFSET :offset"
+    )
+    suspend fun getAllMessagePaged(receiverId: String, limit: Int, offset: Int): List<MessageEntity>
+
+    @Query("SELECT * FROM MessageEntity WHERE :receiverId IN (receiverId, senderId) ORDER BY date DESC")
+    fun getAllMessagePagedSources(receiverId: String): PagingSource<Int, MessageEntity>
+
+    @Query(
+        "SELECT * FROM MessageEntity WHERE :receiverId IN (receiverId, senderId) ORDER BY date " +
+                "LIMIT :limit OFFSET :offset"
+    )
+    fun getAllMessagePagedFlow(
+        receiverId: String,
+        limit: Int,
+        offset: Int
+    ): Flow<List<MessageEntity>>
+
+    @Query("SELECT COUNT(*) FROM MessageEntity WHERE :receiverId IN (receiverId, senderId)")
+    suspend fun countMessage(receiverId: String): Int
 }

@@ -49,6 +49,15 @@ object DataMapper {
                 messageBody = message.messageBody,
                 date = message.date.toLong()
             )
+            is Message.ImageMessages -> MessageEntity(
+                id = message.id,
+                type = Message.Type.TEXT.name,
+                senderId = message.senderId,
+                receiverId = message.receiverId,
+                status = message.status.name,
+                messageBody = message.imageBody.toStringBody(),
+                date = message.date.toLong()
+            )
             else -> throw ChatinganException(ErrorMessages.MESSAGE_INVALID_TYPE)
         }
     }
@@ -65,8 +74,45 @@ object DataMapper {
                     date = entity.date.toDate()
                 )
             }
+            Message.Type.IMAGE -> {
+                Message.ImageMessages(
+                    id = entity.id,
+                    senderId = entity.senderId,
+                    receiverId = entity.receiverId,
+                    status = entity.status.uppercase().run { Message.Status.valueOf(this) },
+                    imageBody = Message.MessageImageBody.fromStringBody(entity.messageBody),
+                    date = entity.date.toDate()
+                )
+            }
             else -> throw ChatinganException(ErrorMessages.MESSAGE_INVALID_TYPE)
         }
+    }
+
+    fun mapEntityToMessageDivider(entity: MessageEntity): Message {
+        val messageEntity = when (entity.type.uppercase().run { Message.Type.valueOf(this) }) {
+            Message.Type.TEXT -> {
+                Message.TextMessages(
+                    id = entity.id,
+                    senderId = entity.senderId,
+                    receiverId = entity.receiverId,
+                    status = entity.status.uppercase().run { Message.Status.valueOf(this) },
+                    messageBody = entity.messageBody,
+                    date = entity.date.toDate()
+                )
+            }
+            Message.Type.IMAGE -> {
+                Message.ImageMessages(
+                    id = entity.id,
+                    senderId = entity.senderId,
+                    receiverId = entity.receiverId,
+                    status = entity.status.uppercase().run { Message.Status.valueOf(this) },
+                    imageBody = Message.MessageImageBody.fromStringBody(entity.messageBody),
+                    date = entity.date.toDate()
+                )
+            }
+            else -> throw ChatinganException(ErrorMessages.MESSAGE_INVALID_TYPE)
+        }
+        return Message.DividerMessage(entity.date.toDate(), messageEntity)
     }
 
     fun mapContactAndLastMessageToMessageInfo(

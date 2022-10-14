@@ -1,8 +1,12 @@
 package com.utsman.chatingan.common.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.material.ripple.rememberRipple
@@ -14,7 +18,7 @@ import com.utsman.chatingan.common.ui.component.ColumnCenter
 
 
 @Composable
-fun LoadingScreen(modifier: Modifier = Modifier.fillMaxSize()) {
+fun LoadingScreen(modifier: Modifier = Modifier.wrapContentWidth()) {
     ColumnCenter(modifier = modifier) {
         CircularProgressIndicator()
     }

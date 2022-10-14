@@ -38,9 +38,7 @@ class AppFirebaseService : FirebaseMessagingService() {
         println("new token fcm ---")
         println(token)
         println("new token fcm --- end ")
-        /*IOScope().launch {
-            Chatingan.getInstance().updateFcm(token)
-        }*/
+        Chatingan.getInstance().updateFcmToken(token)
     }
 
 }
