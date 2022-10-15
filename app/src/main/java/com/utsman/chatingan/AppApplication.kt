@@ -22,6 +22,7 @@ class AppApplication : Application() {
         super.onCreate()
         Chatingan.initialize(this) {
             fcmServerKey = SERVER_KEY
+            freeImageHostApiKey = IMGHOST_API_KEY
         }
 
         startKoin {
@@ -50,6 +51,7 @@ class AppApplication : Application() {
     }
 
     companion object {
-        const val SERVER_KEY = "AAAAuXTwdzI:APA91bFQm5BAlwwF8XEuEmw4s3hMzH8b4vQGy9sK2rsahAQh0rxQRZvZQxBbYzzx7VKHg98J2t6O2dofvJy3qxWLU7AhNvpB1JqlmzdcF1ql52VRLnpjxEWP6B8o2kQMV4Ms6UZN4AxH"
+        private const val SERVER_KEY = "AAAAuXTwdzI:APA91bFQm5BAlwwF8XEuEmw4s3hMzH8b4vQGy9sK2rsahAQh0rxQRZvZQxBbYzzx7VKHg98J2t6O2dofvJy3qxWLU7AhNvpB1JqlmzdcF1ql52VRLnpjxEWP6B8o2kQMV4Ms6UZN4AxH"
+        private const val IMGHOST_API_KEY = "6d207e02198a847aa98d0a2a901485a5"
     }
 }

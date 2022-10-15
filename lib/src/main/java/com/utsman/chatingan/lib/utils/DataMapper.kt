@@ -1,4 +1,4 @@
-package com.utsman.chatingan.lib
+package com.utsman.chatingan.lib.utils
 
 import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.entity.ContactEntity
@@ -7,6 +7,8 @@ import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
 import com.utsman.chatingan.lib.data.transaction.ContactAndLastMessage
+import com.utsman.chatingan.lib.toDate
+import com.utsman.chatingan.lib.toLong
 
 object DataMapper {
 
@@ -51,7 +53,7 @@ object DataMapper {
             )
             is Message.ImageMessages -> MessageEntity(
                 id = message.id,
-                type = Message.Type.TEXT.name,
+                type = Message.Type.IMAGE.name,
                 senderId = message.senderId,
                 receiverId = message.receiverId,
                 status = message.status.name,

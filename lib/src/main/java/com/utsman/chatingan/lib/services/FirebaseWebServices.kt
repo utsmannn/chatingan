@@ -1,8 +1,8 @@
 package com.utsman.chatingan.lib.services
 
-import com.utsman.chatingan.lib.ChatinganConfiguration
-import com.utsman.chatingan.lib.data.firebase.FirebaseMessageRequest
-import com.utsman.chatingan.lib.data.firebase.FirebaseMessagingResponse
+import com.utsman.chatingan.lib.configuration.ChatinganConfiguration
+import com.utsman.chatingan.lib.data.network.firebase.FirebaseMessageRequest
+import com.utsman.chatingan.lib.data.network.firebase.FirebaseMessagingResponse
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -10,17 +10,18 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.create
 import retrofit2.http.Body
 import retrofit2.http.POST
 
 internal interface FirebaseWebServices {
 
-    @POST(ENDPOINT.SEND)
+    @POST(Endpoint.SEND)
     suspend fun sendMessage(
         @Body messageBody: FirebaseMessageRequest
     ): Response<FirebaseMessagingResponse>
 
-    object ENDPOINT {
+    object Endpoint {
         const val SEND = "fcm/send"
     }
 
@@ -57,7 +58,7 @@ internal interface FirebaseWebServices {
                 .client(okHttp)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
-                .create(FirebaseWebServices::class.java)
+                .create()
         }
     }
 }

@@ -41,16 +41,13 @@ import com.utsman.chatingan.common.event.doOnSuccess
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.lib.Chatingan
-import com.utsman.chatingan.lib.ChatinganQrUtils
+import com.utsman.chatingan.lib.utils.ChatinganQrUtils
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.pair.ContactPairListener
 import com.utsman.chatingan.lib.isValid
 import com.utsman.chatingan.navigation.LocalMainProvider
-import com.utsman.chatingan.navigation.NavigationProvider
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 
 @OptIn(ExperimentalMaterialApi::class)

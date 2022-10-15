@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.CheckCircle
 import androidx.compose.material.icons.sharp.Lens
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,15 +37,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
-import com.utsman.chatingan.chat.routes.BackPassChat
+import com.utsman.chatingan.chat.routes.LocalImageStateHelper
+import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.navigation.LocalMainProvider
-import com.utsman.chatingan.navigation.NavigationProvider
 import id.zelory.compressor.Compressor
 import id.zelory.compressor.constraint.default
 import id.zelory.compressor.constraint.destination
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 import java.io.File
 import java.text.SimpleDateFormat
@@ -54,11 +54,13 @@ import kotlin.coroutines.resume
 
 @Composable
 fun CameraScreen(
-    viewModel: CameraViewModel = getViewModel(),
-    backPassChat: BackPassChat = get()
+    contact: Contact,
+    viewModel: CameraViewModel = getViewModel()
 ) {
 
     val navigationProvider = LocalMainProvider.current.navProvider()
+    val chatingan = LocalMainProvider.current.chatingan()
+
     val lensFacing = CameraSelector.LENS_FACING_BACK
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -90,12 +92,21 @@ fun CameraScreen(
     }
 
     var isHandleBackPress by remember {
-        mutableStateOf(true)
+        mutableStateOf(false)
     }
 
     BackHandler(isHandleBackPress) {
         viewModel.clearFile()
         isHandleBackPress = false
+    }
+
+    DisposableEffect(Unit) {
+        // on canceled by back button
+        onDispose {
+            if (!isHandleBackPress) {
+                viewModel.clearFile()
+            }
+        }
     }
 
     Box(contentAlignment = Alignment.BottomCenter, modifier = Modifier.fillMaxSize()) {
@@ -114,9 +125,17 @@ fun CameraScreen(
             modifier = Modifier.padding(bottom = 20.dp),
             onClick = {
                 if (imageResult.isSuccess) {
-                    backPassChat.setBackFrom("CAMERA_VIEW")
-                    navigationProvider.back()
-                    viewModel.clearFile()
+                    scope.launch {
+                        imageResult.onSuccess {
+                            val message = chatingan.createNewImageMessage(contact) {
+                                file = it
+                            }
+
+                            viewModel.sendMessage(contact, message)
+                            navigationProvider.back()
+                        }
+                        viewModel.clearFile()
+                    }
                 } else {
                     takePhoto(
                         filenameFormat = "yyyy-MM-dd-HH-mm-ss-SSS",
@@ -125,8 +144,10 @@ fun CameraScreen(
                         executor = activityCameraProperties.cameraExecutor,
                         onImageCaptured = {
                             coroutineScope.launch {
+                                isHandleBackPress = true
                                 val compressedFile = compressedPhoto(context, it)
-                                viewModel.sendFile(compressedFile)
+                                viewModel.setFile(compressedFile)
+                                //imageStateHelper.setImage(sessionId, compressedFile)
                             }
                         },
                         onError = {
@@ -196,7 +217,8 @@ private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
     }
 
 private suspend fun compressedPhoto(context: Context, file: File): File {
-    val destinationFile = File(file.parent, file.nameWithoutExtension + "-compressed." + file.extension)
+    val destinationFile =
+        File(file.parent, file.nameWithoutExtension + "-compressed." + file.extension)
     val compressedFile = Compressor.compress(context, file) {
         default(quality = 70)
         destination(destinationFile)

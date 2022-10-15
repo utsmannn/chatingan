@@ -2,10 +2,12 @@ package com.utsman.chatingan.lib
 
 import android.content.Context
 import androidx.paging.PagingData
+import com.utsman.chatingan.lib.configuration.ChatinganConfiguration
 import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
+import com.utsman.chatingan.lib.impl.ChatinganImpl
 import kotlinx.coroutines.flow.Flow
 
 interface Chatingan {
@@ -25,6 +27,17 @@ interface Chatingan {
     fun getAllContact(): Flow<List<Contact>>
     fun getContact(contactId: String): Flow<Contact>
     fun getContactByEmail(email: String): Flow<Contact>
+
+
+    fun createNewTextMessage(
+        contact: Contact,
+        textBuilder: Message.MessageTextBuilder.() -> Unit
+    ): Message.TextMessages
+
+    suspend fun createNewImageMessage(
+        contact: Contact,
+        imageBuilder: Message.MessageImageBuilder.() -> Unit
+    ): Message.ImageMessages
 
     suspend fun getMessagesInfo(): Flow<List<MessageInfo>>
     suspend fun sendMessage(contact: Contact, message: Message)
@@ -52,13 +65,15 @@ interface Chatingan {
 
         data class ChatinganConfigurationBuilder(
             var contact: Contact? = null,
-            var fcmServerKey: String = ""
+            var fcmServerKey: String = "",
+            var freeImageHostApiKey: String = ""
         )
 
         fun initialize(context: Context, configuration: ChatinganConfigurationBuilder.() -> Unit) {
             val configBuilder = ChatinganConfigurationBuilder().apply(configuration)
             val config = ChatinganConfiguration(
-                fcmServerKey = configBuilder.fcmServerKey
+                fcmServerKey = configBuilder.fcmServerKey,
+                freeImageHostApiKey = configBuilder.freeImageHostApiKey
             ).also {
                 val contact = configBuilder.contact
                 if (contact != null) {
@@ -81,7 +96,11 @@ interface Chatingan {
                 currentConfig.fcmServerKey
             }
 
-            val newConfig = ChatinganConfiguration(newServerKey)
+            val newImgBBApiKey = configBuilder.freeImageHostApiKey.ifEmpty {
+                currentConfig.freeImageHostApiKey
+            }
+
+            val newConfig = ChatinganConfiguration(newServerKey, newImgBBApiKey)
                 .also {
                     val newContact = configBuilder.contact
                     if (newContact != null) {

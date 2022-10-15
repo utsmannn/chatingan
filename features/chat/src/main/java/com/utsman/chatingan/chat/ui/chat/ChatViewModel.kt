@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import java.util.UUID
 
 class ChatViewModel(
     private val repository: ChatRepository,
@@ -27,6 +28,9 @@ class ChatViewModel(
     private val rawText = MutableStateFlow("")
     val textState = rawText
     val imageFileState = cameraRepository.imageFileState
+    val cameraSessionId = MutableStateFlow("")
+    /*val cameraSessionId: Flow<String>
+        get() = _cameraSessionId*/
 
     private val _pagingData: MutableStateFlow<PagingData<Message>> = MutableStateFlow(PagingData.empty())
     val pagingData: Flow<PagingData<Message>>
@@ -59,6 +63,10 @@ class ChatViewModel(
 
     fun setText(text: String) = viewModelScope.launch {
         rawText.value = text
+    }
+
+    fun generateCameraSessionId(sessionId: String) = viewModelScope.launch {
+        cameraSessionId.value = sessionId
     }
 
     override fun dispose() {

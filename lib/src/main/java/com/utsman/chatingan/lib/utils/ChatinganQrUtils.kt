@@ -1,4 +1,4 @@
-package com.utsman.chatingan.lib
+package com.utsman.chatingan.lib.utils
 
 import android.graphics.Bitmap
 import android.graphics.Color

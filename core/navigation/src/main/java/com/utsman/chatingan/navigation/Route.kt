@@ -1,5 +1,13 @@
 package com.utsman.chatingan.navigation
 
+import android.net.Uri
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.utsman.chatingan.lib.toJson
+import com.utsman.chatingan.lib.typeToken
+import kotlin.reflect.KClass
+import kotlin.reflect.javaType
+
 open class Route(
     private val value: String = ""
 ) {
@@ -13,7 +21,7 @@ open class Route(
         }
     }
 
-    fun getValueWithArgumentContent(content: String): Route {
+    private fun generateValueWithArgumentContent(content: String): Route {
         val newValue = if (arg.isEmpty()) {
             value
         } else {
@@ -21,6 +29,12 @@ open class Route(
         }
 
         return Route(newValue)
+    }
+
+    fun <T>getValueWithArgumentContent(content: T, clazz: Class<T>): Route {
+        val json = Gson().toJson(content, clazz)
+        val jsonUri = Uri.encode(json)
+        return generateValueWithArgumentContent(jsonUri)
     }
 
     companion object {

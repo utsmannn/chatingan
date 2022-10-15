@@ -67,7 +67,7 @@ interface ChatinganDao {
     suspend fun deleteMessage(messageId: String)
 
     @Query("SELECT * FROM MessageEntity WHERE id = :messageId")
-    suspend fun getMessageById(messageId: String): MessageEntity
+    suspend fun getMessageById(messageId: String): MessageEntity?
 
     @Query("SELECT * FROM MessageEntity WHERE :receiverId IN (receiverId, senderId) ORDER BY date")
     fun getAllMessage(receiverId: String): Flow<List<MessageEntity>>

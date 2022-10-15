@@ -1,4 +1,4 @@
-package com.utsman.chatingan.lib.data.firebase
+package com.utsman.chatingan.lib.data.network.firebase
 
 import com.google.gson.annotations.SerializedName
 

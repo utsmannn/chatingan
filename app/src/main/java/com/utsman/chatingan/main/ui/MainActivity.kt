@@ -56,7 +56,10 @@ class MainActivity : ComponentActivity() {
 
             val authComponentProvider = AuthComponentProvider(authComponent)
 
-            CompositionLocalProvider(LocalMainProvider provides mainProvider, LocalAuthComponentProvider provides authComponentProvider) {
+            CompositionLocalProvider(
+                LocalMainProvider provides mainProvider,
+                LocalAuthComponentProvider provides authComponentProvider
+            ) {
                 ChatinganApp(navHostController)
             }
         }
@@ -117,14 +120,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun createNotificationChannel() {
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_DEFAULT
             val channel = NotificationChannel("chatingan-anu", "ahahay", importance).apply {
                 description = "descriptionText"
             }
-            // Register the channel with the system
             val notificationManager: NotificationManager =
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)

@@ -21,14 +21,10 @@ interface NavigationProvider {
 
     /* CHAT */
     fun navigateToChat(contact: Contact)
-    fun navigateToCamera()
+    fun navigateToCamera(contact: Contact)
 
     /* CONTACT */
     fun navigateToContact()
     fun navigateToAddContact()
-
-    object NavArg {
-        const val MESSAGE_CONTACT_ARG = "contact"
-    }
 }
 

@@ -85,7 +85,6 @@ fun SplashScreen(
     val userState by mainViewModel.userState.collectAsState()
     val firebaseTokenState by mainViewModel.firebaseTokenState.collectAsState()
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
     userState
         .doOnLoading {
@@ -102,28 +101,6 @@ fun SplashScreen(
         }
         .onSuccess { user ->
             firebaseTokenState.onSuccess { token ->
-                /*val contactDetail = Contact.Detail(user.email)
-
-                val chatinganContact = ChatinganConfig.ChatinganContactBuilder()
-                    .setId(user.id)
-                    .setName(user.name)
-                    .setImage(user.photoUrl)
-                    .setDetail(contactDetail)
-                    .build()
-
-                val chatinganConfig = ChatinganConfig.ChatinganConfigBuilder()
-                    .setContact(contact = chatinganContact)
-                    .setServerKey(serverKey = AppApplication.SERVER_KEY)
-                    .setFcmToken(fcmToken = token)
-                    .build()
-
-                println("--- SET CHATINGAN INSTANCE ---")
-                Chatingan.initialize(chatinganConfig)
-                navigationProvider.screenOf(
-                    routeViewModel = mainViewModel,
-                    destination = HomeRoute.Home
-                )*/
-
                 val meContact = Contact.build {
                     id = user.id
                     name = user.name

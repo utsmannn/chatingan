@@ -1,7 +1,9 @@
-package com.utsman.chatingan.lib
+package preferences
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.utsman.chatingan.lib.utils.Utils
+import com.utsman.chatingan.lib.toJson
 
 object ChatinganPreferences {
 

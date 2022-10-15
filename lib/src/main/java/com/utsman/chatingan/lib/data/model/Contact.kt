@@ -1,9 +1,8 @@
 package com.utsman.chatingan.lib.data.model
 
-import com.utsman.chatingan.lib.Utils
+import com.utsman.chatingan.lib.utils.Utils
 import com.utsman.chatingan.lib.toDate
 import java.util.Date
-import java.util.UUID
 
 data class Contact(
     val id: String,

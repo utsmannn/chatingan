@@ -3,8 +3,9 @@ package com.utsman.chatingan.lib.data.model
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.utsman.chatingan.lib.Chatingan
-import com.utsman.chatingan.lib.Utils
+import com.utsman.chatingan.lib.utils.Utils
 import com.utsman.chatingan.lib.toDate
+import java.io.File
 import java.util.Date
 import java.util.UUID
 
@@ -44,10 +45,6 @@ sealed class Message(val superDate: Date) {
         SENDING, SENT, RECEIVED, READ, FAILURE, NONE
     }
 
-    data class MessageTextBuilder(
-        var message: String = ""
-    )
-
     data class MessageImageBody(
         var imageUrl: String = "",
         var thumbUrl: String = "",
@@ -65,30 +62,13 @@ sealed class Message(val superDate: Date) {
         }
     }
 
-    companion object {
+    data class MessageTextBuilder(
+        var message: String = ""
+    )
 
-        fun buildTextMessage(
-            contact: Contact,
-            textBuilder: MessageTextBuilder.() -> Unit
-        ): TextMessages {
-            val messageTextBuilder = MessageTextBuilder().apply(textBuilder)
-            val currentChatingan = Chatingan.getInstance()
-            val currentConfig = currentChatingan.getConfiguration()
-
-            return TextMessages(
-                id = UUID.randomUUID().toString(),
-                senderId = currentConfig.contact.id,
-                receiverId = contact.id,
-                status = Status.SENDING,
-                messageBody = messageTextBuilder.message,
-                date = Utils.now().toDate()
-            )
-        }
-
-        fun emptyTextMessage(): TextMessages {
-            return TextMessages("", "", "", Status.FAILURE, "", Utils.now().toDate())
-        }
-    }
+    data class MessageImageBuilder(
+        var file: File? = null
+    )
 
 
     fun isNotEmpty(): Boolean {
@@ -166,6 +146,13 @@ sealed class Message(val superDate: Date) {
                 this.status
             }
             is DividerMessage -> Status.NONE
+        }
+    }
+
+    companion object {
+
+        fun emptyTextMessage(): TextMessages {
+            return TextMessages("", "", "", Status.FAILURE, "", Utils.now().toDate())
         }
     }
 }

@@ -11,28 +11,41 @@ import androidx.navigation.navigation
 import com.utsman.chatingan.chat.ui.camera.CameraScreen
 import com.utsman.chatingan.chat.ui.chat.ChatScreen
 import com.utsman.chatingan.common.ui.component.animateComposable
-import com.utsman.chatingan.lib.Utils
+import com.utsman.chatingan.lib.utils.Utils
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.navigation.NavigationRouteModule
 import com.utsman.chatingan.navigation.Route
+import com.utsman.chatingan.navigation.generateDataFromKey
 
 object ChatRoute : NavigationRouteModule {
+
+    private const val CHAT_KEY_ARG = "chat"
+    private const val CAMERA_SESSION_KEY_ARG = "contact"
 
     override val parent: String
         get() = "chat/main"
 
     object Chat : Route("$parent/chat") {
         override val arg: String
-            get() = "contact"
+            get() = CHAT_KEY_ARG
     }
 
-    object Camera : Route("$parent/camera")
+    object Camera : Route("$parent/camera") {
+        override val arg: String
+            get() = CAMERA_SESSION_KEY_ARG
+    }
 
     @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
     override fun registerNavGraph(navGraphBuilder: NavGraphBuilder) {
-        val argument = listOf(
-            navArgument(NavigationProvider.NavArg.MESSAGE_CONTACT_ARG) {
+        val chatArgument = listOf(
+            navArgument(CHAT_KEY_ARG) {
+                type = NavType.StringType
+            }
+        )
+
+        val cameraArgument = listOf(
+            navArgument(CAMERA_SESSION_KEY_ARG) {
                 type = NavType.StringType
             }
         )
@@ -40,16 +53,19 @@ object ChatRoute : NavigationRouteModule {
         return navGraphBuilder.navigation(startDestination = Chat.getValue(), route = parent) {
             animateComposable(
                 route = Chat.getValue(),
-                arguments = argument
+                arguments = chatArgument
             ) {
                 CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
-                    val contactJson = it.arguments?.getString(NavigationProvider.NavArg.MESSAGE_CONTACT_ARG)
-                    val contact: Contact = Utils.convertFromJson(contactJson.orEmpty())
+                    val contact: Contact = it.generateDataFromKey(CHAT_KEY_ARG)
                     ChatScreen(contact = contact)
                 }
             }
-            animateComposable(Camera.getValue()) {
-                CameraScreen()
+            animateComposable(
+                route = Camera.getValue(),
+                arguments = cameraArgument
+            ) {
+                val contact: Contact = it.generateDataFromKey(CAMERA_SESSION_KEY_ARG)
+                CameraScreen(contact)
             }
         }
     }

@@ -60,14 +60,13 @@ class AppNavigationProvider(
     }
 
     override fun navigateToChat(contact: Contact) {
-        val json = contact.toJson()
-        val jsonUri = Uri.encode(json)
-        val route = ChatRoute.Chat.getValueWithArgumentContent(jsonUri)
+        val route = ChatRoute.Chat.getValueWithArgumentContent(contact, Contact::class.java)
         navigateRoute(route)
     }
 
-    override fun navigateToCamera() {
-        navigateRoute(ChatRoute.Camera)
+    override fun navigateToCamera(contact: Contact) {
+        val route = ChatRoute.Camera.getValueWithArgumentContent(contact, Contact::class.java)
+        navigateRoute(route)
     }
 
     private fun navigateRoute(route: Route) {

@@ -1,20 +1,23 @@
-package com.utsman.chatingan.lib
+package com.utsman.chatingan.lib.configuration
 
 import android.content.Context
 import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.model.Contact
+import preferences.ChatinganPreferences
 
 data class ChatinganConfiguration(
-    val fcmServerKey: String
+    val fcmServerKey: String,
+    val freeImageHostApiKey: String
 ) {
 
     internal data class ConfigData(
         val fcmServerKey: String,
+        val freeImageHostApiKey: String,
         val contact: Contact
     ) {
 
         fun toConfiguration(): ChatinganConfiguration {
-            return ChatinganConfiguration(fcmServerKey).also {
+            return ChatinganConfiguration(fcmServerKey, freeImageHostApiKey).also {
                 it._contact = contact
             }
         }
@@ -29,7 +32,7 @@ data class ChatinganConfiguration(
     }
 
     private fun toConfigData(): ConfigData {
-        return ConfigData(fcmServerKey, contact)
+        return ConfigData(fcmServerKey, freeImageHostApiKey, contact)
     }
 
     fun savePref(context: Context) {

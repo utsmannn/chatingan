@@ -1,6 +1,6 @@
 package com.utsman.chatingan.lib.receiver
 
-import com.utsman.chatingan.lib.Utils
+import com.utsman.chatingan.lib.utils.Utils
 import com.utsman.chatingan.lib.data.model.Message
 
 data class MessageNotifier(

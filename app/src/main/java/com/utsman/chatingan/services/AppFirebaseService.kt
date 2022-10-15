@@ -6,12 +6,8 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.utsman.chatingan.R
 import com.utsman.chatingan.lib.Chatingan
-import com.utsman.chatingan.lib.Utils
 import com.utsman.chatingan.lib.calculateIntId
-import com.utsman.chatingan.lib.data.model.Message
-import com.utsman.chatingan.lib.ellipsize
 import com.utsman.chatingan.lib.ifTextMessage
-import com.utsman.chatingan.lib.receiver.MessageNotifier
 
 class AppFirebaseService : FirebaseMessagingService() {
 

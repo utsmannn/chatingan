@@ -1,8 +1,11 @@
-package com.utsman.chatingan.lib
+package com.utsman.chatingan.lib.impl
 
 import android.graphics.Bitmap
+import com.utsman.chatingan.lib.ChatinganQr
+import com.utsman.chatingan.lib.utils.ChatinganQrUtils
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.pair.ContactPairListener
+import com.utsman.chatingan.lib.toJson
 
 class ChatinganQrImpl(
     private val contact: Contact,
