@@ -11,7 +11,7 @@ apply from: script_dependencies_compose
 
 dependencies {
     implementation module_core_common
-    implementation module_core_chatsdk
+    implementation module_lib
     implementation module_core_auth
     implementation module_core_navigation
 }

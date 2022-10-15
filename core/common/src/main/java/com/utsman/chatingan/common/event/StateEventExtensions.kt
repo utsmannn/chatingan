@@ -11,6 +11,7 @@ import com.utsman.chatingan.common.ui.LoadingScreen
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -221,7 +222,6 @@ suspend fun <T> FlowEvent<List<T>>.filterFlow(predicate: (T) -> Boolean): FlowEv
     return filtered.stateIn(MainScope())
 }
 
-
 suspend fun <T> Flow<StateEvent<List<T>>>.filterFlow(predicate: (T) -> Boolean): FlowEvent<List<T>> {
     val filtered = map {
         if (it is StateEvent.Success) {
@@ -234,4 +234,18 @@ suspend fun <T> Flow<StateEvent<List<T>>>.filterFlow(predicate: (T) -> Boolean):
     return filtered.stateIn(MainScope())
 }
 
+suspend fun <T>Flow<T>.collectToStateEvent(stateEventFlow: MutableStateFlow<StateEvent<T>>) {
+    stateEventFlow.value = loadingEventValue()
+    this
+        .catch {
+            stateEventFlow.value = StateEvent.Failure(it)
+        }
+        .collect {
+            if (it is List<*> && it.isEmpty()) {
+                stateEventFlow.value = StateEvent.Empty()
+            } else {
+                stateEventFlow.value = StateEvent.Success(it)
+            }
+        }
+}
 

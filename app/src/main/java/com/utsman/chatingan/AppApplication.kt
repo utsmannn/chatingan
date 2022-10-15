@@ -6,14 +6,11 @@ import com.utsman.chatingan.auth.data.AuthConfig
 import com.utsman.chatingan.auth.datasources.AuthDataSources
 import com.utsman.chatingan.chat.di.ChatModule
 import com.utsman.chatingan.common.IOScope
-import com.utsman.chatingan.common.event.onSuccess
 import com.utsman.chatingan.common.koin.moduleListOf
 import com.utsman.chatingan.contact.di.ContactModule
 import com.utsman.chatingan.di.AppModule
 import com.utsman.chatingan.home.HomeModule
-import com.utsman.chatingan.sdk.Chatingan
-import com.utsman.chatingan.sdk.data.config.ChatinganConfig
-import com.utsman.chatingan.sdk.data.entity.Contact
+import com.utsman.chatingan.lib.Chatingan
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
@@ -23,6 +20,11 @@ class AppApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Chatingan.initialize(this) {
+            fcmServerKey = SERVER_KEY
+            freeImageHostApiKey = IMGHOST_API_KEY
+        }
+
         startKoin {
             androidContext(this@AppApplication)
             moduleListOf(
@@ -49,6 +51,7 @@ class AppApplication : Application() {
     }
 
     companion object {
-        const val SERVER_KEY = "AAAAuXTwdzI:APA91bFQm5BAlwwF8XEuEmw4s3hMzH8b4vQGy9sK2rsahAQh0rxQRZvZQxBbYzzx7VKHg98J2t6O2dofvJy3qxWLU7AhNvpB1JqlmzdcF1ql52VRLnpjxEWP6B8o2kQMV4Ms6UZN4AxH"
+        private const val SERVER_KEY = "AAAAuXTwdzI:APA91bFQm5BAlwwF8XEuEmw4s3hMzH8b4vQGy9sK2rsahAQh0rxQRZvZQxBbYzzx7VKHg98J2t6O2dofvJy3qxWLU7AhNvpB1JqlmzdcF1ql52VRLnpjxEWP6B8o2kQMV4Ms6UZN4AxH"
+        private const val IMGHOST_API_KEY = "6d207e02198a847aa98d0a2a901485a5"
     }
 }

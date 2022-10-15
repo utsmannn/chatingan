@@ -2,12 +2,16 @@ package com.utsman.chatingan.home.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.utsman.chatingan.common.event.FlowEvent
 import com.utsman.chatingan.common.koin.KoinInjector
 import com.utsman.chatingan.home.repository.HomeRepository
-import com.utsman.chatingan.sdk.data.entity.ChatInfo
-import com.utsman.chatingan.sdk.data.entity.Contact
+import com.utsman.chatingan.lib.Chatingan
+import com.utsman.chatingan.lib.data.model.Message
+import com.utsman.chatingan.lib.data.model.MessageInfo
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -19,11 +23,13 @@ class HomeViewModel(
     val contactState = homeRepository.contactState
     val tokenState = homeRepository.tokenState
 
+    val lastMessageFlow: MutableStateFlow<Message.TextMessages> = MutableStateFlow(Message.emptyTextMessage())
+
     val chatState = homeRepository.chatsState
 
     init {
         viewModelScope.launch {
-            homeRepository.getChats()
+            homeRepository.getMessages()
         }
     }
 
@@ -35,8 +41,11 @@ class HomeViewModel(
         //homeRepository.getTokenId(id)
     }
 
-    suspend fun getContact(chatInfo: ChatInfo): FlowEvent<Contact> {
-        return homeRepository.getContact(chatInfo)
+    suspend fun getLastMessage(messageInfo: MessageInfo): StateFlow<Message> {
+        //return Chatingan.getInstance().getLastMessage(messageInfo)
+        return withContext(viewModelScope.coroutineContext) {
+            Chatingan.getInstance().getLastMessage(messageInfo).stateIn(viewModelScope)
+        }
     }
 
     companion object : KoinInjector {

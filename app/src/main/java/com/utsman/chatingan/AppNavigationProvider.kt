@@ -1,5 +1,6 @@
 package com.utsman.chatingan
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
@@ -10,8 +11,11 @@ import com.utsman.chatingan.navigation.Route
 import com.utsman.chatingan.navigation.RouteViewModel
 import com.utsman.chatingan.contact.routes.ContactRoute
 import com.utsman.chatingan.home.routes.HomeRoute
+import com.utsman.chatingan.lib.data.model.Contact
+import com.utsman.chatingan.lib.data.model.MessageInfo
+import com.utsman.chatingan.lib.toJson
 import com.utsman.chatingan.routes.AppRoute
-import com.utsman.chatingan.sdk.data.entity.Contact
+import org.json.JSONObject
 import org.koin.core.context.loadKoinModules
 import org.koin.dsl.module
 
@@ -51,23 +55,21 @@ class AppNavigationProvider(
         navigateRoute(ContactRoute.Contact)
     }
 
+    override fun navigateToAddContact() {
+        navigateRoute(ContactRoute.AddContact)
+    }
+
     override fun navigateToChat(contact: Contact) {
-        val jsonUri = contact.toJsonUri()
-        val route = ChatRoute.Chat.getValueWithArgumentContent(jsonUri)
+        val route = ChatRoute.Chat.getValueWithArgumentContent(contact, Contact::class.java)
+        navigateRoute(route)
+    }
+
+    override fun navigateToCamera(contact: Contact) {
+        val route = ChatRoute.Camera.getValueWithArgumentContent(contact, Contact::class.java)
         navigateRoute(route)
     }
 
     private fun navigateRoute(route: Route) {
         navHostController.navigate(route.getValue())
-    }
-
-    companion object {
-
-        fun initialize(navHostController: NavHostController) {
-            val module = module {
-                single<NavigationProvider> { AppNavigationProvider(navHostController) }
-            }
-            loadKoinModules(module)
-        }
     }
 }

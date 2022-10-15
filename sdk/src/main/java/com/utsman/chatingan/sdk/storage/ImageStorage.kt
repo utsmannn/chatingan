@@ -7,8 +7,16 @@ class ImageStorage {
     private val storage: FirebaseStorage
         get() = FirebaseStorage.getInstance()
 
-    fun upload() {
-
+    fun upload(bytes: ByteArray, name: String) {
+        val reference = storage.reference.child("image/$name.jpg")
+        reference.activeUploadTasks.map {
+        }
+        reference.putBytes(bytes)
+            .addOnProgressListener {
+                val uploadSession = it.uploadSessionUri
+                val total = it.totalByteCount
+                val current = it.bytesTransferred
+            }
     }
 
 }

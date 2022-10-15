@@ -9,9 +9,25 @@ apply from: script_dependencies_common
 apply from: script_dependencies_auth
 apply from: script_dependencies_compose
 
+android {
+    compileOptions {
+        // Flag to enable support for the new language APIs
+        coreLibraryDesugaringEnabled true
+        // Sets Java compatibility to Java 8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
 dependencies {
     implementation module_core_common
-    implementation module_core_chatsdk
+    implementation module_lib
     implementation module_core_auth
     implementation module_core_navigation
+
+    //implementation('com.journeyapps:zxing-android-embedded:4.3.0') { transitive = false }
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+    implementation 'com.google.zxing:core:3.5.0'
+
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.0'
 }

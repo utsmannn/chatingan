@@ -38,6 +38,12 @@ data class MessageChat(
         )
     }
 
+    fun getImageChat(): MessageImage? {
+        if (type != Type.IMAGE) return null
+        val type = object : TypeToken<MessageImage>() {}.type
+        return Gson().fromJson(messageBody, type)
+    }
+
     enum class Type {
         TEXT, DIVIDER, IMAGE
     }

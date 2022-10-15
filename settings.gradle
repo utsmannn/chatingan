@@ -10,11 +10,13 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url = "https://artifactory.cronapp.io/public-release/"
+        }
     }
 }
 rootProject.name = "chatingan"
 include ':app'
-include ':sdk'
 include ':core:common'
 include ':core:network'
 include ':core:auth'
@@ -22,3 +24,4 @@ include ':features:home'
 include ':features:contact'
 include ':features:chat'
 include ':core:navigation'
+include ':lib'

@@ -1,72 +1,52 @@
 package com.utsman.chatingan.chat.repository
 
-import com.utsman.chatingan.common.event.FlowEvent
-import com.utsman.chatingan.common.event.StateEvent
-import com.utsman.chatingan.common.event.defaultStateEvent
-import com.utsman.chatingan.common.event.loadingEventValue
-import com.utsman.chatingan.sdk.Chatingan
-import com.utsman.chatingan.sdk.data.entity.Chat
-import com.utsman.chatingan.sdk.data.entity.ChatInfo
-import com.utsman.chatingan.sdk.data.entity.Contact
-import com.utsman.chatingan.sdk.data.entity.MessageChat
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.utsman.chatingan.lib.Chatingan
+import com.utsman.chatingan.lib.data.model.Contact
+import com.utsman.chatingan.lib.data.model.Message
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 
 class ChatRepositoryImpl : ChatRepository {
-
-    private val _chatState = defaultStateEvent<Chat>()
-    override val chatState: FlowEvent<Chat>
-        get() = _chatState
-
-    private val _chatInfoState = defaultStateEvent<ChatInfo>()
-    override val chatInfoState: FlowEvent<ChatInfo>
-        get() = _chatInfoState
-
-
-    private val _message = defaultStateEvent<MessageChat>()
-    override val message: FlowEvent<MessageChat>
-        get() = _message
-
-    private val _isReceiverIsTyping = MutableStateFlow(false)
-    override val isReceiverIsTyping: StateFlow<Boolean>
-        get() = _isReceiverIsTyping
-
-
-    override suspend fun getChat(contact: Contact) {
-        _chatState.value = loadingEventValue()
-        Chatingan.getInstance()
-            .getChat(contact)
-            .collect(_chatState)
+    override fun getContact(contactId: String): Flow<Contact> {
+        return Chatingan.getInstance().getContact(contactId)
     }
 
-    override suspend fun getChatInfo(contact: Contact) {
-        _chatInfoState.value = loadingEventValue()
-        Chatingan.getInstance()
-            .getChatInfo(contact)
-            .collect {
-                _chatInfoState.value = it
-                if (it is StateEvent.Success) {
-                    val contactId = contact.id
-                    val isContactTyping = it.data.typingIds.contains(contactId)
-                    _isReceiverIsTyping.value = isContactTyping
-                }
-            }
+    override fun getMessages(
+        scope: CoroutineScope,
+        contact: Contact
+    ): Flow<PagingData<Message>> {
+        val newScope = scope + Dispatchers.IO
+        return Chatingan
+            .getInstance()
+            .getAllMessage(contact, true, 10, true)
+            .distinctUntilChanged()
+            .cachedIn(newScope)
     }
 
-    override suspend fun readChat(contact: Contact, messageChat: MessageChat) {
-        val chatingan = Chatingan.getInstance()
-        chatingan.markChatRead(contact, messageChat)
+    override fun setTypingStatus(scope: CoroutineScope, contact: Contact, isTyping: Boolean) {
+        scope.launch {
+            Chatingan.getInstance()
+                .setTyping(contact, isTyping)
+        }
     }
 
-    override suspend fun sendMessage(contact: Contact, message: String) {
-        _message.value = loadingEventValue()
-        val chatingan = Chatingan.getInstance()
-        val senderId = chatingan.config.contact.id
-        val messageChat = chatingan.createMessageChat(senderId, contact.id, message)
-        chatingan.sendMessage(contact, messageChat).collect(_message)
+    override fun sendMessage(scope: CoroutineScope, contact: Contact, message: Message) {
+        scope.launch {
+            Chatingan.getInstance()
+                .sendMessage(contact, message)
+        }
     }
 
-    override suspend fun setTypingStatus(contact: Contact, isTyping: Boolean) {
-        Chatingan.getInstance().sendTypingStatus(contact, isTyping)
+    override fun markAsRead(scope: CoroutineScope, contact: Contact, message: Message) {
+        scope.launch {
+            Chatingan.getInstance()
+                .markMessageIsRead(contact, message)
+        }
     }
 }
