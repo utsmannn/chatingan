@@ -13,21 +13,6 @@ import androidx.navigation.NavDeepLink
 import androidx.navigation.NavGraphBuilder
 import com.google.accompanist.navigation.animation.composable
 
-/*
-
-val NavGraphBuilder.enterTransition =
-    this.slideIntoContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(400))
-
-val exitTransition =
-    slideOutOfContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(400))
-
-val popExitTransition =
-    slideOutOfContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(300))
-
-val popEnterTransition =
-    slideIntoContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(350))
-*/
-
 
 @OptIn(ExperimentalAnimationApi::class)
 fun NavGraphBuilder.animateComposable(
@@ -52,16 +37,34 @@ fun NavGraphBuilder.animateComposable(
 
 @OptIn(ExperimentalAnimationApi::class)
 private fun AnimatedContentScope<NavBackStackEntry>.enterTransition() =
-    slideIntoContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(700))
+    slideIntoContainer(
+        AnimatedContentScope.SlideDirection.Left, animationSpec = tween(
+            DURATION_ANIMATION_TRANSITION
+        )
+    )
 
 @OptIn(ExperimentalAnimationApi::class)
 private fun AnimatedContentScope<NavBackStackEntry>.exitTransition() =
-    slideOutOfContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(700))
+    slideOutOfContainer(
+        AnimatedContentScope.SlideDirection.Left, animationSpec = tween(
+            DURATION_ANIMATION_TRANSITION
+        )
+    )
 
 @OptIn(ExperimentalAnimationApi::class)
 private fun AnimatedContentScope<NavBackStackEntry>.popEnterTransition() =
-    slideIntoContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(700))
+    slideIntoContainer(
+        AnimatedContentScope.SlideDirection.Right, animationSpec = tween(
+            DURATION_ANIMATION_TRANSITION
+        )
+    )
 
 @OptIn(ExperimentalAnimationApi::class)
 private fun AnimatedContentScope<NavBackStackEntry>.popExitTransition() =
-    slideOutOfContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(700))
+    slideOutOfContainer(
+        AnimatedContentScope.SlideDirection.Right, animationSpec = tween(
+            DURATION_ANIMATION_TRANSITION
+        )
+    )
+
+const val DURATION_ANIMATION_TRANSITION = 600

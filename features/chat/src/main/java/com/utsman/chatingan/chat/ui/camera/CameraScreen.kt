@@ -1,6 +1,9 @@
 package com.utsman.chatingan.chat.ui.camera
 
 import android.content.Context
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -19,11 +22,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.CheckCircle
 import androidx.compose.material.icons.sharp.Lens
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -71,9 +77,11 @@ fun CameraScreen(
         .requireLensFacing(lensFacing)
         .build()
 
+    val scope = rememberCoroutineScope()
+
     val imageResult by viewModel.imageFileState.collectAsState()
 
-    LaunchedEffect(lensFacing) {
+    scope.launch {
         val cameraProvider = context.getCameraProvider()
         cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(
@@ -84,6 +92,15 @@ fun CameraScreen(
         )
 
         preview.setSurfaceProvider(previewView.surfaceProvider)
+    }
+
+    var isHandleBackPress by remember {
+        mutableStateOf(true)
+    }
+
+    BackHandler(isHandleBackPress) {
+        viewModel.clearFile()
+        isHandleBackPress = false
     }
 
     Box(contentAlignment = Alignment.BottomCenter, modifier = Modifier.fillMaxSize()) {
@@ -104,6 +121,7 @@ fun CameraScreen(
                 if (imageResult.isSuccess) {
                     backPassChat.setBackFrom("CAMERA_VIEW")
                     navigationProvider.back()
+                    viewModel.clearFile()
                 } else {
                     takePhoto(
                         filenameFormat = "yyyy-MM-dd-HH-mm-ss-SSS",

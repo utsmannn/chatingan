@@ -1,6 +1,9 @@
 package com.utsman.chatingan.chat.routes
 
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -26,7 +29,7 @@ object ChatRoute : NavigationRouteModule {
 
     object Camera : Route("$parent/camera")
 
-    @OptIn(ExperimentalAnimationApi::class)
+    @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
     override fun registerNavGraph(navGraphBuilder: NavGraphBuilder) {
         val argument = listOf(
             navArgument(NavigationProvider.NavArg.MESSAGE_CONTACT_ARG) {
@@ -37,11 +40,13 @@ object ChatRoute : NavigationRouteModule {
         return navGraphBuilder.navigation(startDestination = Chat.getValue(), route = parent) {
             animateComposable(
                 route = Chat.getValue(),
-                arguments = argument,
+                arguments = argument
             ) {
-                val contactJson = it.arguments?.getString(NavigationProvider.NavArg.MESSAGE_CONTACT_ARG)
-                val contact: Contact = Utils.convertFromJson(contactJson.orEmpty())
-                ChatScreen(contact = contact)
+                CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
+                    val contactJson = it.arguments?.getString(NavigationProvider.NavArg.MESSAGE_CONTACT_ARG)
+                    val contact: Contact = Utils.convertFromJson(contactJson.orEmpty())
+                    ChatScreen(contact = contact)
+                }
             }
             animateComposable(Camera.getValue()) {
                 CameraScreen()

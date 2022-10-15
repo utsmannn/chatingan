@@ -77,6 +77,7 @@ import com.utsman.chatingan.chat.routes.BackPassChat
 import com.utsman.chatingan.common.DateUtils
 import com.utsman.chatingan.common.IOScope
 import com.utsman.chatingan.common.ui.LoadingScreen
+import com.utsman.chatingan.common.ui.component.DURATION_ANIMATION_TRANSITION
 import com.utsman.chatingan.common.ui.component.Gray50
 import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
@@ -206,6 +207,7 @@ fun ChatContent(
     val pagingMessages: LazyPagingItems<Message> = viewModel.pagingData.collectAsLazyPagingItems()
 
     scope.launch {
+        delay(DURATION_ANIMATION_TRANSITION.toLong())
         viewModel.listenForTyping(contact)
         viewModel.getMessages(contact)
     }
@@ -562,8 +564,7 @@ fun DividerMessageItem(
     Column(
         modifier = Modifier
             .wrapContentHeight()
-            .fillMaxWidth()
-            .padding(6.dp),
+            .fillMaxWidth(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -573,7 +574,7 @@ fun DividerMessageItem(
             text = ChatinganDividerUtils.generateDateDividerText(message.superDate),
             modifier = Modifier
                 .background(Gray50, shape = RoundedCornerShape(6.dp))
-                .padding(horizontal = 6.dp, vertical = 3.dp),
+                .padding(6.dp),
             fontSize = 10.sp,
             fontWeight = FontWeight.Light
         )

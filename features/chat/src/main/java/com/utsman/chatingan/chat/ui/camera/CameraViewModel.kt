@@ -21,6 +21,10 @@ class CameraViewModel(
         cameraRepository.useFile(file)
     }
 
+    fun clearFile() = viewModelScope.launch {
+        cameraRepository.clearFile()
+    }
+
     companion object : KoinInjector {
         override fun inject(): Module {
             return module {

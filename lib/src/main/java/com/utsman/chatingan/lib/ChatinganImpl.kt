@@ -274,7 +274,7 @@ class ChatinganImpl(
             .distinctUntilChanged()
             .map {
                 it.map { entity ->
-                    /*if (withDivider) {
+                    if (withDivider) {
                         val currentDay = sdfDay.format(entity.date.toDate()).toInt()
                         if (currentDay < nowDay) {
                             DataMapper.mapEntityToMessageDivider(entity)
@@ -285,8 +285,8 @@ class ChatinganImpl(
                         }
                     } else {
                         DataMapper.mapEntityToMessage(entity)
-                    }*/
-                    DataMapper.mapEntityToMessage(entity)
+                    }
+                    //DataMapper.mapEntityToMessage(entity)
                 }
             }
 

@@ -20,7 +20,13 @@ object HomeRoute : NavigationRouteModule {
     @OptIn(ExperimentalAnimationApi::class)
     override fun registerNavGraph(navGraphBuilder: NavGraphBuilder) {
         navGraphBuilder.navigation(startDestination = Home.getValue(), route = parent) {
-            animateComposable(Home.getValue()) {
+            animateComposable(
+                Home.getValue(),
+                exitTransition = null,
+                enterTransition = null,
+                popExitTransition = null,
+                popEnterTransition = null
+            ) {
                 HomeScreen()
             }
             animateComposable(Profile.getValue()) {

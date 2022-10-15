@@ -1,8 +1,10 @@
 package com.utsman.chatingan.contact.routes
 
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import com.utsman.chatingan.common.ui.component.animateComposable
 import com.utsman.chatingan.contact.ui.AddContactScreen
 import com.utsman.chatingan.navigation.NavigationRouteModule
 import com.utsman.chatingan.navigation.Route
@@ -24,12 +26,13 @@ object ContactRoute : NavigationRouteModule {
     override val parent: String
         get() = "contact"
 
+    @OptIn(ExperimentalAnimationApi::class)
     override fun registerNavGraph(navGraphBuilder: NavGraphBuilder) {
         navGraphBuilder.navigation(startDestination = Contact.getValue(), route = parent) {
-            composable(Contact.getValue()) {
+            animateComposable(Contact.getValue()) {
                 ContactScreen()
             }
-            composable(AddContact.getValue()) {
+            animateComposable(AddContact.getValue()) {
                 AddContactScreen()
             }
         }
