@@ -1,9 +1,7 @@
 package com.utsman.chatingan.chat.ui.camera
 
 import android.content.Context
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -22,8 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.CheckCircle
 import androidx.compose.material.icons.sharp.Lens
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,8 +37,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.utsman.chatingan.chat.routes.BackPassChat
-import com.utsman.chatingan.navigation.ActivityCameraProperties
-import com.utsman.chatingan.navigation.LocalActivityProvider
+import com.utsman.chatingan.navigation.LocalMainProvider
 import com.utsman.chatingan.navigation.NavigationProvider
 import id.zelory.compressor.Compressor
 import id.zelory.compressor.constraint.default
@@ -59,16 +54,16 @@ import kotlin.coroutines.resume
 
 @Composable
 fun CameraScreen(
-    navigationProvider: NavigationProvider = get(),
     viewModel: CameraViewModel = getViewModel(),
     backPassChat: BackPassChat = get()
 ) {
 
+    val navigationProvider = LocalMainProvider.current.navProvider()
     val lensFacing = CameraSelector.LENS_FACING_BACK
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
-    val activityCameraProperties = LocalActivityProvider.current.activityCameraProperties()
+    val activityCameraProperties = LocalMainProvider.current.activityCameraProperties()
 
     val preview = Preview.Builder().build()
     val previewView = remember { PreviewView(context) }

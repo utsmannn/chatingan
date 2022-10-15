@@ -33,7 +33,7 @@ internal interface FirebaseWebServices {
             )
 
             val loggingInterceptor = HttpLoggingInterceptor()
-            loggingInterceptor.level = HttpLoggingInterceptor.Level.BASIC
+            loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
 
             val authInterceptor = Interceptor { chain ->
                 val process = chain.run {
@@ -48,7 +48,7 @@ internal interface FirebaseWebServices {
 
             val okHttp = OkHttpClient()
                 .newBuilder()
-                //.addInterceptor(loggingInterceptor)
+                .addInterceptor(loggingInterceptor)
                 .addInterceptor(authInterceptor)
                 .build()
 

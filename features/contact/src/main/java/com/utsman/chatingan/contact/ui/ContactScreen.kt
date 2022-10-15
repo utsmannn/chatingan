@@ -43,6 +43,7 @@ import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.MessageInfo
+import com.utsman.chatingan.navigation.LocalMainProvider
 import com.utsman.chatingan.navigation.NavigationProvider
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
@@ -52,9 +53,10 @@ import org.koin.androidx.compose.getViewModel
 
 @Composable
 fun ContactScreen(
-    navigationProvider: NavigationProvider = get(),
     viewModel: ContactViewModel = getViewModel()
 ) {
+
+    val navigationProvider = LocalMainProvider.current.navProvider()
     val contact by viewModel.getContacts().collectAsState()
 
     Scaffold(

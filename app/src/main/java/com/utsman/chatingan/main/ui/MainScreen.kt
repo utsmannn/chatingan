@@ -12,6 +12,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.navigation.animation.AnimatedNavHost
@@ -29,6 +30,7 @@ import com.utsman.chatingan.home.routes.HomeRoute
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.login.ui.LoginScreen
+import com.utsman.chatingan.navigation.LocalMainProvider
 import com.utsman.chatingan.navigation.NavigationProvider
 import com.utsman.chatingan.routes.AppRoute
 import org.koin.androidx.compose.get
@@ -38,10 +40,10 @@ import org.koin.androidx.compose.getViewModel
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ChatinganApp(
-    authComponent: AuthComponent
+    navHostController: NavHostController
 ) {
-    val navHostController = rememberAnimatedNavController()
-    AppNavigationProvider.initialize(navHostController)
+    //val navHostController = rememberAnimatedNavController()
+    //AppNavigationProvider.initialize(navHostController)
 
     AnimatedNavHost(
         navController = navHostController,
@@ -55,7 +57,7 @@ fun ChatinganApp(
             SplashScreen()
         }
         animateComposable(AppRoute.Login.getValue()) {
-            LoginScreen(authComponent = authComponent)
+            LoginScreen()
         }
 
         HomeRoute.registerNavGraph(this)
@@ -64,7 +66,8 @@ fun ChatinganApp(
     }
 }
 @Composable
-fun MainScreen(navigationProvider: NavigationProvider = get()) {
+fun MainScreen() {
+    val navigationProvider = LocalMainProvider.current.navProvider()
     ColumnCenter {
         Button(onClick = {
             navigationProvider.navigateToSplash()
@@ -76,9 +79,9 @@ fun MainScreen(navigationProvider: NavigationProvider = get()) {
 
 @Composable
 fun SplashScreen(
-    navigationProvider: NavigationProvider = get(),
     mainViewModel: MainViewModel = getViewModel()
 ) {
+    val navigationProvider = LocalMainProvider.current.navProvider()
     val userState by mainViewModel.userState.collectAsState()
     val firebaseTokenState by mainViewModel.firebaseTokenState.collectAsState()
     val context = LocalContext.current

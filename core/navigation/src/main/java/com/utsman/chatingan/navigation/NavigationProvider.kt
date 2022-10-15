@@ -31,3 +31,4 @@ interface NavigationProvider {
         const val MESSAGE_CONTACT_ARG = "contact"
     }
 }
+

@@ -9,6 +9,7 @@ import com.utsman.chatingan.common.IOScope
 import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.entity.ContactEntity
 import com.utsman.chatingan.lib.data.firebase.FirebaseMessageRequest
+import com.utsman.chatingan.lib.data.firebase.FirebaseSendData
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
@@ -70,18 +71,22 @@ class ChatinganImpl(
                 throw throwable
             }
 
-            val isSuccessRequest = sendNotification(
+            val sendData = sendNotification(
                 token = contactPaired.fcmToken,
                 json = contentContact,
                 notificationType = MessageNotifier.NotificationType.CONTACT_PAIR,
                 messageType = Message.Type.OTHER
             )
 
-            val contactEntity = DataMapper.mapContactToEntity(contactPaired)
-            chatinganDao.insertContact(contactEntity)
-            qrImpl.setPairListenerSuccess(contactPaired)
+            if (!sendData.isSuccess) {
+                qrImpl.setPairListenerFailure(Throwable(sendData.message))
+            } else {
+                val contactEntity = DataMapper.mapContactToEntity(contactPaired)
+                chatinganDao.insertContact(contactEntity)
+                qrImpl.setPairListenerSuccess(contactPaired)
+            }
 
-            return@ChatinganQrImpl isSuccessRequest
+            return@ChatinganQrImpl sendData.isSuccess
         }
     }
 
@@ -286,7 +291,6 @@ class ChatinganImpl(
                     } else {
                         DataMapper.mapEntityToMessage(entity)
                     }
-                    //DataMapper.mapEntityToMessage(entity)
                 }
             }
 
@@ -323,13 +327,15 @@ class ChatinganImpl(
     }
 
     private suspend fun sendTextMessage(contact: Contact, textMessages: Message.TextMessages) {
+        if (textMessages.messageBody.isEmpty()) return
+
         val messageJson = textMessages.toJson()
         val messageEntity = DataMapper.mapMessageToEntity(textMessages)
 
         chatinganDao.insertMessage(messageEntity)
 
         val receiver = contact.copy(lastMessageId = messageEntity.id)
-        val isNotificationSuccess = sendNotification(
+        val sendData = sendNotification(
             token = receiver.fcmToken,
             json = messageJson,
             notificationType = MessageNotifier.NotificationType.MESSAGE,
@@ -338,7 +344,7 @@ class ChatinganImpl(
             subtitle = textMessages.messageBody.ellipsize(ELLIPSIZE_MAX)
         )
 
-        val messageStatus = if (isNotificationSuccess) {
+        val messageStatus = if (sendData.isSuccess) {
             Message.Status.SENT
         } else {
             Message.Status.FAILURE
@@ -469,7 +475,7 @@ class ChatinganImpl(
         messageType: Message.Type,
         title: String = "",
         subtitle: String = ""
-    ): Boolean {
+    ): FirebaseSendData {
         val firebaseRequest = FirebaseMessageRequest.createFromMessage(token = token) {
             body = json
             type = notificationType
@@ -484,9 +490,16 @@ class ChatinganImpl(
         }
 
         val response = webServices.sendMessage(firebaseRequest)
-        if (!response.isSuccessful) return false
+        if (!response.isSuccessful) return FirebaseSendData(false, "Internal failure")
 
-        return response.code() == 200
+        val responseBody = response.body()
+        val errorResult = responseBody?.results?.firstOrNull()
+            ?.error
+
+        val isSuccess = response.code() == 200 && errorResult == null
+        val message = errorResult ?: "Success"
+
+        return FirebaseSendData(isSuccess, message)
     }
 
     companion object {

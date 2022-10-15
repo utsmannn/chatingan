@@ -6,7 +6,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,8 +18,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,7 +40,6 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.primarySurface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,10 +52,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,57 +61,51 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.items
 import androidx.paging.compose.itemsIndexed
 import coil.compose.AsyncImage
 import com.utsman.chatingan.chat.routes.BackPassChat
 import com.utsman.chatingan.common.DateUtils
-import com.utsman.chatingan.common.IOScope
-import com.utsman.chatingan.common.ui.LoadingScreen
 import com.utsman.chatingan.common.ui.component.DURATION_ANIMATION_TRANSITION
 import com.utsman.chatingan.common.ui.component.Gray50
 import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
+import com.utsman.chatingan.common.ui.component.IconResChatFailure
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.utils.ChatinganDividerUtils
-import com.utsman.chatingan.navigation.LocalActivityProvider
+import com.utsman.chatingan.navigation.LocalMainProvider
 import com.utsman.chatingan.navigation.NavigationProvider
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
 import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 
 private val AppBarHeight = 56.dp
 
-private const val chatRounded = 12
+private const val ChatRounded = 12
 
 private val ChatShapeSender = RoundedCornerShape(
-    topStartPercent = chatRounded,
-    bottomEndPercent = chatRounded,
-    bottomStartPercent = chatRounded
+    topStartPercent = ChatRounded,
+    bottomEndPercent = ChatRounded,
+    bottomStartPercent = ChatRounded
 )
 
 private val ChatShapeReceiver = RoundedCornerShape(
-    topEndPercent = chatRounded,
-    bottomEndPercent = chatRounded,
-    bottomStartPercent = chatRounded
+    topEndPercent = ChatRounded,
+    bottomEndPercent = ChatRounded,
+    bottomStartPercent = ChatRounded
 )
 
 @Composable
 fun ChatScreen(
     contact: Contact,
-    navigationProvider: NavigationProvider = get(),
     viewModel: ChatViewModel = getViewModel(),
     backPassChat: BackPassChat = get(),
 ) {
+    val navigationProvider = LocalMainProvider.current.navProvider()
 
     val imageResult by viewModel.imageFileState.collectAsState()
     val currentBackPass by backPassChat.currentBack.collectAsState()
@@ -202,7 +190,7 @@ fun ChatContent(
         mutableStateOf(false)
     }
 
-    val activityProvider = LocalActivityProvider.current
+    val activityProvider = LocalMainProvider.current
 
     val pagingMessages: LazyPagingItems<Message> = viewModel.pagingData.collectAsLazyPagingItems()
 
@@ -511,6 +499,9 @@ fun TextMessageItem(
                             Message.Status.RECEIVED, Message.Status.READ -> {
                                 IconResChatDoneAll()
                             }
+                            Message.Status.FAILURE -> {
+                                IconResChatFailure()
+                            }
                             else -> {
                                 IconResChatDone()
                             }
@@ -519,6 +510,9 @@ fun TextMessageItem(
                         val iconTint = when (message.getChildStatus()) {
                             Message.Status.READ -> {
                                 Color.Blue
+                            }
+                            Message.Status.FAILURE -> {
+                                Color.Red
                             }
                             else -> {
                                 Color.Black

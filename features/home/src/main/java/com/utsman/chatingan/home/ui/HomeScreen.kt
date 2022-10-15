@@ -48,6 +48,7 @@ import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAllRead
+import com.utsman.chatingan.common.ui.component.IconResChatFailure
 import com.utsman.chatingan.home.R
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.data.model.Contact
@@ -55,6 +56,7 @@ import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
 import com.utsman.chatingan.lib.ellipsize
 import com.utsman.chatingan.lib.ifTextMessage
+import com.utsman.chatingan.navigation.LocalMainProvider
 import com.utsman.chatingan.navigation.NavigationProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,9 +67,10 @@ import org.koin.androidx.compose.getViewModel
 
 @Composable
 fun HomeScreen(
-    navigationProvider: NavigationProvider = get(),
     viewModel: HomeViewModel = getViewModel()
 ) {
+    val navigationProvider = LocalMainProvider.current.navProvider()
+
     val chatsState by viewModel.chatState.collectAsState()
     val meContact = remember {
         Chatingan.getInstance().getConfiguration().contact
@@ -176,6 +179,9 @@ fun ChatItemScreen(
                 Message.Status.RECEIVED, Message.Status.READ -> {
                     IconResChatDoneAll()
                 }
+                Message.Status.FAILURE -> {
+                    IconResChatFailure()
+                }
                 else -> {
                     IconResChatDone()
                 }
@@ -184,6 +190,9 @@ fun ChatItemScreen(
             val iconTint = when (lastMessage.getChildStatus()) {
                 Message.Status.READ -> {
                     Color.Blue
+                }
+                Message.Status.FAILURE -> {
+                    Color.Red
                 }
                 else -> {
                     Color.Black
@@ -364,9 +373,9 @@ fun UnreadCount(modifier: Modifier, count: Int) {
 }
 
 @Composable
-fun ProfileScreen(
-    navigationProvider: NavigationProvider = get()
-) {
+fun ProfileScreen() {
+    val navigationProvider = LocalMainProvider.current.navProvider()
+
     ColumnCenter {
         Text(text = "this is profile screen", modifier = Modifier.clickable {
             navigationProvider.back()

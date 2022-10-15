@@ -73,14 +73,4 @@ class AppNavigationProvider(
     private fun navigateRoute(route: Route) {
         navHostController.navigate(route.getValue())
     }
-
-    companion object {
-
-        fun initialize(navHostController: NavHostController) {
-            val module = module {
-                single<NavigationProvider> { AppNavigationProvider(navHostController) }
-            }
-            loadKoinModules(module)
-        }
-    }
 }

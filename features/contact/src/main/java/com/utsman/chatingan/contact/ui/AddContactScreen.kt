@@ -45,6 +45,7 @@ import com.utsman.chatingan.lib.ChatinganQrUtils
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.pair.ContactPairListener
 import com.utsman.chatingan.lib.isValid
+import com.utsman.chatingan.navigation.LocalMainProvider
 import com.utsman.chatingan.navigation.NavigationProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
@@ -55,10 +56,10 @@ import org.koin.androidx.compose.getViewModel
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun AddContactScreen(
-    viewModel: AddContactViewModel = getViewModel(),
-    navigatorProvider: NavigationProvider = get()
+    viewModel: AddContactViewModel = getViewModel()
 ) {
 
+    val navigationProvider = LocalMainProvider.current.navProvider()
     val context = LocalContext.current
 
     val sheetState = rememberModalBottomSheetState(
@@ -76,17 +77,13 @@ fun AddContactScreen(
         Chatingan.getInstance().getConfiguration().contact
     }
 
-    /*val meContact = Chatingan.getInstance()
-        .getConfiguration()
-        .contact*/
-
     Chatingan
         .getInstance()
         .getChatinganQr()
         .setPairListener(object : ContactPairListener {
             override fun onPairSuccess(contact: Contact) {
                 Toast.makeText(context, "Success", Toast.LENGTH_SHORT).show()
-                navigatorProvider.back()
+                navigationProvider.back()
             }
 
             override fun onPairFailed(throwable: Throwable) {
@@ -132,7 +129,7 @@ fun AddContactScreen(
 
     DefaultLayoutAppBar(
         title = "Pair contact",
-        onBack = { navigatorProvider.back() }
+        onBack = { navigationProvider.back() }
     ) {
         ModalBottomSheetLayout(
             modifier = Modifier.fillMaxSize(),
