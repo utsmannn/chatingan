@@ -9,14 +9,23 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Button
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.Text
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.sharp.CheckCircle
 import androidx.compose.material.icons.sharp.Lens
 import androidx.compose.runtime.Composable
@@ -28,11 +37,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -121,22 +133,27 @@ fun CameraScreen(
             AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
         }
 
-        IconButton(
-            modifier = Modifier.padding(bottom = 20.dp),
-            onClick = {
-                if (imageResult.isSuccess) {
+        if (imageResult.isSuccess) {
+            SendBox(
+                viewModel = viewModel,  onSend = { text ->
                     scope.launch {
                         imageResult.onSuccess {
                             val message = chatingan.createNewImageMessage(contact) {
                                 file = it
+                                caption = text
                             }
 
                             viewModel.sendMessage(contact, message)
                             navigationProvider.back()
                         }
                         viewModel.clearFile()
+                        viewModel.setText("")
                     }
-                } else {
+                })
+        } else {
+            IconButton(
+                modifier = Modifier.padding(bottom = 20.dp),
+                onClick = {
                     takePhoto(
                         filenameFormat = "yyyy-MM-dd-HH-mm-ss-SSS",
                         imageCapture = imageCapture,
@@ -147,32 +164,73 @@ fun CameraScreen(
                                 isHandleBackPress = true
                                 val compressedFile = compressedPhoto(context, it)
                                 viewModel.setFile(compressedFile)
-                                //imageStateHelper.setImage(sessionId, compressedFile)
                             }
                         },
                         onError = {
                             it.printStackTrace()
                         }
                     )
+                },
+                content = {
+                    Icon(
+                        imageVector = Icons.Sharp.Lens,
+                        contentDescription = "Take picture",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .padding(1.dp)
+                            .border(1.dp, Color.White, CircleShape)
+                    )
                 }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun SendBox(
+    viewModel: CameraViewModel,
+    onSend: (String) -> Unit
+) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val text by viewModel.textState.collectAsState("")
+    val scope = rememberCoroutineScope()
+
+    Row(
+        modifier = Modifier
+    ) {
+
+        TextField(
+            modifier = Modifier
+                .weight(3f)
+                .padding(horizontal = 6.dp, vertical = 6.dp)
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            value = text,
+            onValueChange = {
+                viewModel.setText(it)
+            },
+            colors = TextFieldDefaults.textFieldColors(
+                disabledTextColor = Color.Transparent,
+                backgroundColor = Color.Gray,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent
+            )
+        )
+
+        Button(
+            modifier = Modifier.padding(start = 6.dp),
+            onClick = {
+                onSend.invoke(text)
+                keyboardController?.hide()
+                focusManager.clearFocus(true)
             },
             content = {
-                val iconImage = if (imageResult.isSuccess) {
-                    Icons.Sharp.CheckCircle
-                } else {
-                    Icons.Sharp.Lens
-                }
-                Icon(
-                    imageVector = iconImage,
-                    contentDescription = "Take picture",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .padding(1.dp)
-                        .border(1.dp, Color.White, CircleShape)
-                )
-            }
-        )
+                Text(text = "send")
+            })
     }
 }
 

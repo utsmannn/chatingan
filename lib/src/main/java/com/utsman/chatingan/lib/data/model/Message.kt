@@ -67,9 +67,9 @@ sealed class Message(val superDate: Date) {
     )
 
     data class MessageImageBuilder(
-        var file: File? = null
+        var file: File? = null,
+        var caption: String = ""
     )
-
 
     fun isNotEmpty(): Boolean {
         return when (this) {

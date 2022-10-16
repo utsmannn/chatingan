@@ -8,6 +8,7 @@ import com.utsman.chatingan.common.koin.KoinInjector
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.navigation.RouteViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
@@ -18,6 +19,8 @@ class CameraViewModel(
     private val cameraRepository: CameraRepository,
     private val chatRepository: ChatRepository
 ) : RouteViewModel(ChatRoute.Camera) {
+    private val rawText = MutableStateFlow("")
+    val textState = rawText
     val imageFileState = cameraRepository.imageFileState
 
     fun setFile(file: File) = viewModelScope.launch {
@@ -30,6 +33,10 @@ class CameraViewModel(
 
     fun sendMessage(contact: Contact, message: Message) =
         chatRepository.sendMessage(viewModelScope, contact, message)
+
+    fun setText(text: String) = viewModelScope.launch {
+        rawText.value = text
+    }
 
     companion object : KoinInjector {
         override fun inject(): Module {

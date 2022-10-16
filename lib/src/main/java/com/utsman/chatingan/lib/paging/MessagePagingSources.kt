@@ -5,7 +5,6 @@ import androidx.paging.PagingState
 import com.utsman.chatingan.lib.data.entity.MessageEntity
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.database.ChatinganDao
-import kotlinx.coroutines.delay
 
 class MessagePagingSources(
     private val contact: Contact,

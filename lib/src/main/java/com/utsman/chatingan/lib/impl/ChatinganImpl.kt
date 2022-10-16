@@ -232,7 +232,8 @@ class ChatinganImpl(
 
         val messageImageBody = Message.MessageImageBody(
             imageUrl = uploadImage.imageUrl,
-            thumbUrl = uploadImage.thumbUrl
+            thumbUrl = uploadImage.thumbUrl,
+            caption = messageImageBuilder.caption
         )
 
         return Message.ImageMessages(

@@ -619,7 +619,7 @@ fun ImageMessageItem(
             ConstraintLayout(
                 modifier = messageModifier
             ) {
-                val (messageText, indicatorRow) = createRefs()
+                val (messageContainer, indicatorRow) = createRefs()
                 Row(
                     modifier = Modifier
                         .constrainAs(indicatorRow) {
@@ -681,21 +681,30 @@ fun ImageMessageItem(
                 }
 
                 val modifierBody = Modifier
-                    .constrainAs(messageText) {
+                    .constrainAs(messageContainer) {
                         start.linkTo(parent.start)
                         end.linkTo(parent.end)
                         top.linkTo(parent.top)
                         bottom.linkTo(indicatorRow.top)
                     }
 
-                AsyncImage(
-                    model = message.imageBody.imageUrl,
-                    contentDescription = "",
+                val caption = message.imageBody.caption
+
+                Column(
                     modifier = modifierBody
                         .widthIn(min = 60.dp)
                         .padding(horizontal = 6.dp, vertical = 6.dp)
-                        .clip(imageClip)
-                )
+                ) {
+                    AsyncImage(
+                        model = message.imageBody.imageUrl,
+                        contentDescription = "",
+                        modifier = modifierBody
+                            .clip(imageClip)
+                    )
+                    if (caption.isNotEmpty()) {
+                        Text(text = message.imageBody.caption)
+                    }
+                }
             }
         }
     }
