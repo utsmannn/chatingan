@@ -1,6 +1,5 @@
-package com.utsman.chatingan.lib.services
+package com.utsman.chatingan.lib.provider.firebase
 
-import com.utsman.chatingan.lib.configuration.ChatinganConfiguration
 import com.utsman.chatingan.lib.data.network.firebase.FirebaseMessageRequest
 import com.utsman.chatingan.lib.data.network.firebase.FirebaseMessagingResponse
 import okhttp3.Headers.Companion.toHeaders
@@ -28,13 +27,21 @@ internal interface FirebaseWebServices {
     companion object {
         private const val BASE_URL = "https://fcm.googleapis.com/"
 
-        fun getInstance(config: ChatinganConfiguration): FirebaseWebServices {
+        fun getInstance(
+            fcmServerKey: String,
+            logLevel: FirebaseEmitter.LogLevel
+        ): FirebaseWebServices {
             val authData = mapOf(
-                "Authorization" to "key=${config.fcmServerKey}"
+                "Authorization" to "key=$fcmServerKey"
             )
 
             val loggingInterceptor = HttpLoggingInterceptor()
-            loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
+            loggingInterceptor.level = when (logLevel) {
+                FirebaseEmitter.LogLevel.NONE -> HttpLoggingInterceptor.Level.BODY
+                FirebaseEmitter.LogLevel.BASIC -> HttpLoggingInterceptor.Level.BASIC
+                FirebaseEmitter.LogLevel.BODY -> HttpLoggingInterceptor.Level.BODY
+                FirebaseEmitter.LogLevel.HEADER -> HttpLoggingInterceptor.Level.HEADERS
+            }
 
             val authInterceptor = Interceptor { chain ->
                 val process = chain.run {
@@ -47,8 +54,7 @@ internal interface FirebaseWebServices {
                 return@Interceptor process
             }
 
-            val okHttp = OkHttpClient()
-                .newBuilder()
+            val okHttp = OkHttpClient.Builder()
                 .addInterceptor(loggingInterceptor)
                 .addInterceptor(authInterceptor)
                 .build()

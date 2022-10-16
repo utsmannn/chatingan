@@ -20,6 +20,8 @@ data class MessageNotifier(
     }
 
     companion object {
+
+        @JvmStatic
         fun fromMap(map: Map<String, String>): MessageNotifier {
             return MessageNotifier(
                 body = map["body"].toString(),
@@ -33,6 +35,11 @@ data class MessageNotifier(
                 subtitle = map["subtitle"].toString(),
                 time = map["time"].toString().toLongOrNull() ?: 0L
             )
+        }
+
+        @JvmStatic
+        fun fromString(data: String): MessageNotifier {
+            return Utils.convertFromJson(data)
         }
     }
 }

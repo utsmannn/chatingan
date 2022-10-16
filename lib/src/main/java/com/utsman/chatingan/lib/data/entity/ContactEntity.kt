@@ -10,7 +10,7 @@ data class ContactEntity(
     val name: String,
     val email: String,
     val imageUrl: String,
-    val fcmToken: String,
+    val token: String,
     val isTyping: Boolean,
     val lastMessageId: String,
     val lastMessageUpdate: Long,

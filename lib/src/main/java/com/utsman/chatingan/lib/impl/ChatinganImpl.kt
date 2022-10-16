@@ -7,30 +7,26 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.utsman.chatingan.common.IOScope
 import com.utsman.chatingan.lib.Chatingan
-import com.utsman.chatingan.lib.configuration.ChatinganConfiguration
 import com.utsman.chatingan.lib.ChatinganQr
-import com.utsman.chatingan.lib.utils.DataMapper
 import com.utsman.chatingan.lib.changeStatus
 import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.entity.ContactEntity
-import com.utsman.chatingan.lib.data.entity.MessageEntity
-import com.utsman.chatingan.lib.data.network.firebase.FirebaseMessageRequest
-import com.utsman.chatingan.lib.data.network.firebase.FirebaseSendData
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
 import com.utsman.chatingan.lib.data.model.MessageReport
 import com.utsman.chatingan.lib.database.ChatinganDao
 import com.utsman.chatingan.lib.database.ChatinganDatabase
-import com.utsman.chatingan.lib.ellipsize
+import com.utsman.chatingan.lib.getContact
 import com.utsman.chatingan.lib.paging.MessagePagingSources
+import com.utsman.chatingan.lib.provider.ImageUploader
+import com.utsman.chatingan.lib.provider.MessageEmitter
 import com.utsman.chatingan.lib.receiver.MessageNotifier
-import com.utsman.chatingan.lib.services.FirebaseWebServices
 import com.utsman.chatingan.lib.setTyping
 import com.utsman.chatingan.lib.toDate
 import com.utsman.chatingan.lib.toJson
 import com.utsman.chatingan.lib.utils.ChatinganDividerUtils
-import com.utsman.chatingan.lib.utils.ImageUploader
+import com.utsman.chatingan.lib.utils.DataMapper
 import com.utsman.chatingan.lib.utils.Utils
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -48,7 +44,9 @@ import java.time.Instant
 import java.util.*
 
 class ChatinganImpl(
-    private val context: Context
+    private val context: Context,
+    private val messageEmitter: MessageEmitter,
+    private val imageUploader: ImageUploader
 ) : Chatingan {
 
     private val database: ChatinganDatabase
@@ -59,17 +57,8 @@ class ChatinganImpl(
     private val chatinganDao: ChatinganDao
         get() = database.chatinganDao()
 
-    private val firebaseWebServices: FirebaseWebServices
-        get() = FirebaseWebServices.getInstance(config)
-
-    private val config: ChatinganConfiguration
-        get() = getConfiguration()
-
-    private val imageUploader: ImageUploader
-        get() = ImageUploader(config)
-
-    override fun getConfiguration(): ChatinganConfiguration {
-        return ChatinganConfiguration.getPref(context)
+    override fun getContact(): Contact {
+        return context.getContact()
     }
 
     private val newMessageFlow: MutableStateFlow<Pair<Contact, Message>?> = MutableStateFlow(null)
@@ -77,8 +66,8 @@ class ChatinganImpl(
     private var nowDay = sdfDay.format(Date.from(Instant.now())).toInt()
 
     private val _chatinganQr by lazy {
-        ChatinganQrImpl(getConfiguration().contact) { contactPaired, qrImpl ->
-            val contentContact = config.contact.toJson()
+        ChatinganQrImpl(getContact()) { contactPaired, qrImpl ->
+            val contentContact = getContact().toJson()
             val existingContact = chatinganDao.getContactByEmail(contactPaired.email)
             if (existingContact != null) {
                 val throwable = ChatinganException("Contact exist!")
@@ -86,8 +75,8 @@ class ChatinganImpl(
                 throw throwable
             }
 
-            val sendData = sendNotification(
-                token = contactPaired.fcmToken,
+            val sendData = messageEmitter.sendNotifier(
+                contact = contactPaired,
                 json = contentContact,
                 notificationType = MessageNotifier.NotificationType.CONTACT_PAIR,
                 messageType = Message.Type.OTHER
@@ -109,35 +98,34 @@ class ChatinganImpl(
         return _chatinganQr
     }
 
-    override fun bindToFirebaseMessagingServices(
-        data: Map<String, String>,
+    override fun bindToMessageSubscriber(
+        messageNotifier: MessageNotifier,
         onMessageIncoming: (Contact, Message) -> Unit
     ) {
-        val incomingNotification = MessageNotifier.fromMap(data)
-        when (incomingNotification.type) {
+        when (messageNotifier.type) {
             MessageNotifier.NotificationType.MESSAGE -> {
                 IOScope().launch {
-                    saveMessageFromNotification(incomingNotification, onMessageIncoming)
+                    saveMessageFromNotification(messageNotifier, onMessageIncoming)
                 }
             }
             MessageNotifier.NotificationType.CONTACT_PAIR -> {
                 IOScope().launch {
-                    saveContactPairFromNotification(incomingNotification)
+                    saveContactPairFromNotification(messageNotifier)
                 }
             }
             MessageNotifier.NotificationType.TYPING -> {
                 IOScope().launch {
-                    updateContactTyping(incomingNotification)
+                    updateContactTyping(messageNotifier)
                 }
             }
             MessageNotifier.NotificationType.MESSAGE_REPORT -> {
                 IOScope().launch {
-                    updateMessageStatus(incomingNotification)
+                    updateMessageStatus(messageNotifier)
                 }
             }
             MessageNotifier.NotificationType.CONTACT_UPDATE -> {
                 IOScope().launch {
-                    updateContact(incomingNotification)
+                    updateContact(messageNotifier)
                 }
             }
             else -> {
@@ -147,16 +135,15 @@ class ChatinganImpl(
     }
 
     override fun updateFcmToken(fcmToken: String) {
-        val currentContact = config.contact
-        val updatedContact = currentContact.copy(fcmToken = fcmToken)
+        val updatedContact = getContact().copy(token = fcmToken)
         val updatedContactEntity = DataMapper.mapContactToEntity(updatedContact)
         IOScope().launch {
             chatinganDao.getAllContact()
                 .firstOrNull()
                 ?.onEach {
-                    val targetToken = it.fcmToken
-                    sendNotification(
-                        token = targetToken,
+                    val contact = DataMapper.mapEntityToContact(it)
+                    messageEmitter.sendNotifier(
+                        contact = contact,
                         json = updatedContactEntity.toJson(),
                         notificationType = MessageNotifier.NotificationType.CONTACT_UPDATE,
                         messageType = Message.Type.OTHER
@@ -189,13 +176,13 @@ class ChatinganImpl(
             _chatinganQr.setPairListenerFailure(throwable)
         } else {
             chatinganDao.insertContact(entity)
-            sendNotification(
-                token = entity.fcmToken,
-                json = config.contact.toJson(),
+            messageEmitter.sendNotifier(
+                contact = contact,
+                json = getContact().toJson(),
                 notificationType = MessageNotifier.NotificationType.CONTACT_PAIR,
                 messageType = Message.Type.OTHER,
-                title = config.contact.name,
-                subtitle = "Success add ${config.contact.name}"
+                title = getContact().name,
+                subtitle = "Success add ${getContact().name}"
             )
 
             _chatinganQr.setPairListenerSuccess(contact)
@@ -225,7 +212,7 @@ class ChatinganImpl(
 
         return Message.TextMessages(
             id = UUID.randomUUID().toString(),
-            senderId = config.contact.id,
+            senderId = getContact().id,
             receiverId = contact.id,
             status = Message.Status.SENDING,
             messageBody = messageTextBuilder.message,
@@ -241,10 +228,7 @@ class ChatinganImpl(
         val file = messageImageBuilder.file ?: throw ChatinganException("Image failure!")
 
         val uploadImageResult = imageUploader.upload(file)
-
-        val uploadImage = uploadImageResult.getOrElse {
-            throw it
-        }
+        val uploadImage = uploadImageResult.getOrThrow()
 
         val messageImageBody = Message.MessageImageBody(
             imageUrl = uploadImage.imageUrl,
@@ -253,7 +237,7 @@ class ChatinganImpl(
 
         return Message.ImageMessages(
             id = UUID.randomUUID().toString(),
-            senderId = config.contact.id,
+            senderId = getContact().id,
             receiverId = contact.id,
             status = Message.Status.SENDING,
             imageBody = messageImageBody,
@@ -276,6 +260,9 @@ class ChatinganImpl(
                 }
                 .filter {
                     it.lastMessage.isNotEmpty()
+                }
+                .sortedByDescending {
+                    it.lastMessage.superDate
                 }
         }
     }
@@ -360,8 +347,8 @@ class ChatinganImpl(
 
     override suspend fun markMessageIsRead(contact: Contact, message: Message) {
         val messageReport = MessageReport(message.getChildId(), Message.Status.READ)
-        sendNotification(
-            token = contact.fcmToken,
+        messageEmitter.sendNotifier(
+            contact = contact,
             json = messageReport.toJson(),
             notificationType = MessageNotifier.NotificationType.MESSAGE_REPORT,
             messageType = Message.Type.OTHER
@@ -370,12 +357,12 @@ class ChatinganImpl(
     }
 
     override suspend fun setTyping(contact: Contact, isTyping: Boolean) {
-        val contactEntity = DataMapper.mapContactToEntity(config.contact)
+        val contactEntity = DataMapper.mapContactToEntity(getContact())
             .setTyping(isTyping)
 
         val content = contactEntity.toJson()
-        sendNotification(
-            token = contact.fcmToken,
+        messageEmitter.sendNotifier(
+            contact = contact,
             json = content,
             notificationType = MessageNotifier.NotificationType.TYPING,
             messageType = Message.Type.OTHER
@@ -409,8 +396,8 @@ class ChatinganImpl(
         chatinganDao.insertMessage(messageEntity)
 
         val receiver = contact.copy(lastMessageId = messageEntity.id)
-        val sendData = sendNotification(
-            token = receiver.fcmToken,
+        val sendData = messageEmitter.sendNotifier(
+            contact = receiver,
             json = json,
             notificationType = MessageNotifier.NotificationType.MESSAGE,
             messageType = Message.Type.valueOf(messageEntity.type.uppercase()),
@@ -428,8 +415,8 @@ class ChatinganImpl(
         val updatedContactEntity = DataMapper.mapContactToEntity(receiver)
         chatinganDao.updateContact(updatedContactEntity)
 
-        val updatedContactMe = config.contact.copy(lastMessageId = newMessageEntity.id)
-        config.updateContact(updatedContactMe)
+        val updatedContactMe = getContact().copy(lastMessageId = newMessageEntity.id)
+        Chatingan.updateContact(context, updatedContactMe)
 
         chatinganDao.updateMessage(newMessageEntity)
     }
@@ -468,8 +455,8 @@ class ChatinganImpl(
         val newContactEntity = DataMapper.mapContactToEntity(contact)
 
         val messageReport = MessageReport(message.getChildId(), Message.Status.RECEIVED)
-        sendNotification(
-            token = contact.fcmToken,
+        messageEmitter.sendNotifier(
+            contact = contact,
             json = messageReport.toJson(),
             notificationType = MessageNotifier.NotificationType.MESSAGE_REPORT,
             messageType = Message.Type.OTHER
@@ -530,7 +517,7 @@ class ChatinganImpl(
             chatinganDao.updateMessageStatus(messageReport.messageId, messageReport.status.name)
 
             val senderId = messageEntity.senderId
-            val contactEntity = if (senderId != config.contact.id) {
+            val contactEntity = if (senderId != getContact().id) {
                 chatinganDao.getContactById(senderId)
             } else {
                 chatinganDao.getContactById(messageEntity.receiverId)
@@ -551,14 +538,14 @@ class ChatinganImpl(
         chatinganDao.updateContact(contactEntity)
     }
 
-    private suspend fun sendNotification(
+    /*private suspend fun sendNotification(
         token: String,
         json: String,
         notificationType: MessageNotifier.NotificationType,
         messageType: Message.Type,
         title: String = "",
         subtitle: String = ""
-    ): FirebaseSendData {
+    ): NotifierResult {
         val firebaseRequest = FirebaseMessageRequest.createFromMessage(token = token) {
             body = json
             type = notificationType
@@ -573,7 +560,7 @@ class ChatinganImpl(
         }
 
         val response = firebaseWebServices.sendMessage(firebaseRequest)
-        if (!response.isSuccessful) return FirebaseSendData(false, "Internal failure")
+        if (!response.isSuccessful) return NotifierResult(false, "Internal failure")
 
         val responseBody = response.body()
         val errorResult = responseBody?.results?.firstOrNull()
@@ -582,8 +569,8 @@ class ChatinganImpl(
         val isSuccess = response.code() == 200 && errorResult == null
         val message = errorResult ?: "Success"
 
-        return FirebaseSendData(isSuccess, message)
-    }
+        return NotifierResult(isSuccess, message)
+    }*/
 
     companion object {
         private const val ELLIPSIZE_MAX = 20

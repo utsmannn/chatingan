@@ -2,20 +2,23 @@ package com.utsman.chatingan.lib
 
 import android.content.Context
 import androidx.paging.PagingData
-import com.utsman.chatingan.lib.configuration.ChatinganConfiguration
 import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
 import com.utsman.chatingan.lib.impl.ChatinganImpl
+import com.utsman.chatingan.lib.preferences.ChatinganPreferences
+import com.utsman.chatingan.lib.provider.ImageUploader
+import com.utsman.chatingan.lib.provider.MessageEmitter
+import com.utsman.chatingan.lib.receiver.MessageNotifier
 import kotlinx.coroutines.flow.Flow
 
 interface Chatingan {
-    fun getConfiguration(): ChatinganConfiguration
+    fun getContact(): Contact
     fun getChatinganQr(): ChatinganQr
 
-    fun bindToFirebaseMessagingServices(
-        data: Map<String, String>,
+    fun bindToMessageSubscriber(
+        messageNotifier: MessageNotifier,
         onMessageIncoming: (Contact, Message) -> Unit = { _, _ -> }
     )
 
@@ -65,50 +68,11 @@ interface Chatingan {
 
         data class ChatinganConfigurationBuilder(
             var contact: Contact? = null,
-            var fcmServerKey: String = "",
             var freeImageHostApiKey: String = ""
         )
 
-        fun initialize(context: Context, configuration: ChatinganConfigurationBuilder.() -> Unit) {
-            val configBuilder = ChatinganConfigurationBuilder().apply(configuration)
-            val config = ChatinganConfiguration(
-                fcmServerKey = configBuilder.fcmServerKey,
-                freeImageHostApiKey = configBuilder.freeImageHostApiKey
-            ).also {
-                val contact = configBuilder.contact
-                if (contact != null) {
-                    it.updateContact(contact)
-                }
-            }
-
-            config.savePref(context)
-            chatingan = ChatinganImpl(context)
-        }
-
-        fun updateConfig(
-            context: Context,
-            configuration: ChatinganConfigurationBuilder.() -> Unit
-        ) {
-            val configBuilder = ChatinganConfigurationBuilder().apply(configuration)
-            val currentConfig = ChatinganConfiguration.getPref(context)
-
-            val newServerKey = configBuilder.fcmServerKey.ifEmpty {
-                currentConfig.fcmServerKey
-            }
-
-            val newImgBBApiKey = configBuilder.freeImageHostApiKey.ifEmpty {
-                currentConfig.freeImageHostApiKey
-            }
-
-            val newConfig = ChatinganConfiguration(newServerKey, newImgBBApiKey)
-                .also {
-                    val newContact = configBuilder.contact
-                    if (newContact != null) {
-                        it.updateContact(newContact)
-                    }
-                }
-
-            newConfig.savePref(context)
+        fun updateContact(context: Context, contact: Contact) {
+            ChatinganPreferences.save(context, "contact", contact)
         }
 
         @JvmStatic
@@ -124,9 +88,24 @@ interface Chatingan {
                 chatingan
             }
         }
+    }
 
-        /*fun setReceiver(chatinganReceiver: ChatinganReceiver) {
-            receiver = chatinganReceiver
-        }*/
+    class Initializer {
+        private lateinit var messageEmitter: MessageEmitter
+        private lateinit var imageUploader: ImageUploader
+
+        fun setMessageEmitter(messageEmitter: MessageEmitter): Initializer {
+            this.messageEmitter = messageEmitter
+            return this
+        }
+
+        fun setImageUploader(imageUploader: ImageUploader): Initializer {
+            this.imageUploader = imageUploader
+            return this
+        }
+
+        fun create(context: Context) {
+            chatingan = ChatinganImpl(context, messageEmitter, imageUploader)
+        }
     }
 }

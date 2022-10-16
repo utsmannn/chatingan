@@ -1,4 +1,4 @@
-package preferences
+package com.utsman.chatingan.lib.preferences
 
 import android.content.Context
 import android.content.SharedPreferences

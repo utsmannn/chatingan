@@ -7,25 +7,32 @@ import com.google.firebase.messaging.RemoteMessage
 import com.utsman.chatingan.R
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.calculateIntId
+import com.utsman.chatingan.lib.ifImageMessage
 import com.utsman.chatingan.lib.ifTextMessage
+import com.utsman.chatingan.lib.receiver.MessageNotifier
 
 class AppFirebaseService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
-        Chatingan.getInstance().bindToFirebaseMessagingServices(message.data) { contact, msg ->
-            msg.ifTextMessage {
-                val builder = NotificationCompat.Builder(this@AppFirebaseService, "chatingan-anu")
-                    .setSmallIcon(R.drawable.ic_launcher_foreground)
-                    .setContentTitle(contact.name)
-                    .setContentText(it.messageBody)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+        val notifier = MessageNotifier.fromMap(message.data)
+        Chatingan.getInstance().bindToMessageSubscriber(notifier) { contact, msg ->
+            val builder = NotificationCompat.Builder(this@AppFirebaseService, "chatingan-anu")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle(contact.name)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
 
-                val notificationId = msg.getChildId().calculateIntId()
-                NotificationManagerCompat.from(this@AppFirebaseService)
-                    .notify(notificationId, builder.build())
+            msg.ifTextMessage {
+                builder.setContentText(it.messageBody)
             }
+            msg.ifImageMessage {
+                builder.setContentText("[image]")
+            }
+
+            val notificationId = msg.getChildId().calculateIntId()
+            NotificationManagerCompat.from(this@AppFirebaseService)
+                .notify(notificationId, builder.build())
         }
     }
 

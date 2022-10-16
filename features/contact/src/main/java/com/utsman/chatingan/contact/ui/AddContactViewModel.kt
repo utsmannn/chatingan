@@ -21,8 +21,8 @@ class AddContactViewModel(
 ) : RouteViewModel(ContactRoute.AddContact) {
 
     val meContactFlow: Flow<Contact> = flow {
-        Chatingan.getInstance().getConfiguration()
-            .contact.run {
+        Chatingan.getInstance().getContact()
+            .run {
                 emit(this)
             }
     }

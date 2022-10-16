@@ -1,4 +1,4 @@
-package com.utsman.chatingan.lib.services
+package com.utsman.chatingan.lib.provider.freeimagehost
 
 import com.utsman.chatingan.lib.data.network.image.FreeImageHostResponse
 import okhttp3.MultipartBody

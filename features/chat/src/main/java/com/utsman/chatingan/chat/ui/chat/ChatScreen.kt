@@ -425,7 +425,7 @@ fun TextMessageItem(
         val gh2 = createGuidelineFromEnd(0.3f)
 
         val messageStatus = message.status
-        val isFromMe = message.senderId == Chatingan.getInstance().getConfiguration().contact.id
+        val isFromMe = message.senderId == Chatingan.getInstance().getContact().id
 
         if (!isFromMe && messageStatus != Message.Status.READ) {
             onRead.invoke()
@@ -567,7 +567,7 @@ fun ImageMessageItem(
         val gh2 = createGuidelineFromEnd(0.3f)
 
         val messageStatus = message.status
-        val isFromMe = message.senderId == Chatingan.getInstance().getConfiguration().contact.id
+        val isFromMe = message.senderId == Chatingan.getInstance().getContact().id
 
         if (!isFromMe && messageStatus != Message.Status.READ) {
             onRead.invoke()

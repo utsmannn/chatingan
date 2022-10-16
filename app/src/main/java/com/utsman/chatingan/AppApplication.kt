@@ -11,6 +11,8 @@ import com.utsman.chatingan.contact.di.ContactModule
 import com.utsman.chatingan.di.AppModule
 import com.utsman.chatingan.home.HomeModule
 import com.utsman.chatingan.lib.Chatingan
+import com.utsman.chatingan.lib.provider.firebase.FirebaseEmitter
+import com.utsman.chatingan.lib.provider.freeimagehost.FreeImageUploader
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
@@ -20,10 +22,13 @@ class AppApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Chatingan.initialize(this) {
-            fcmServerKey = SERVER_KEY
-            freeImageHostApiKey = IMGHOST_API_KEY
-        }
+        val messageEmitter = FirebaseEmitter(SERVER_KEY, FirebaseEmitter.LogLevel.BODY)
+        val imageUploader = FreeImageUploader(IMGHOST_API_KEY)
+
+        Chatingan.Initializer()
+            .setMessageEmitter(messageEmitter)
+            .setImageUploader(imageUploader)
+            .create(this)
 
         startKoin {
             androidContext(this@AppApplication)

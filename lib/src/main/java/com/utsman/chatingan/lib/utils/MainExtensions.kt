@@ -1,12 +1,15 @@
 package com.utsman.chatingan.lib
 
+import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
+import com.utsman.chatingan.lib.data.ChatinganException
 import com.utsman.chatingan.lib.data.entity.ContactEntity
 import com.utsman.chatingan.lib.data.entity.MessageEntity
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
+import com.utsman.chatingan.lib.preferences.ChatinganPreferences
 import java.lang.reflect.Type
 import java.text.SimpleDateFormat
 import java.util.*
@@ -16,13 +19,14 @@ fun Long.toDate(): Date {
     val dateString = sdf.format(this)
     return sdf.parse(dateString)
 }
+
 fun Date.toLong(): Long {
     val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm:ss")
     val dateString = sdf.format(this)
     return sdf.parse(dateString).time
 }
 
-inline fun <reified T>T.typeToken(): Type {
+inline fun <reified T> T.typeToken(): Type {
     return object : TypeToken<T>() {}.type
 }
 
@@ -32,7 +36,7 @@ fun gsonDate(): Gson {
         .create()
 }
 
-inline fun <reified T>T.toJson(): String {
+inline fun <reified T> T.toJson(): String {
     val type = typeToken()
     return Gson().toJson(this, type)
 }
@@ -79,7 +83,7 @@ fun ContactEntity.setTyping(isTyping: Boolean): ContactEntity {
         name = name,
         email = email,
         imageUrl = imageUrl,
-        fcmToken = fcmToken,
+        token = token,
         isTyping = isTyping,
         lastMessageId = lastMessageId,
         lastMessageUpdate = lastMessageUpdate,
@@ -93,6 +97,12 @@ fun Contact.isValid(): Boolean {
 
 fun Message.ifTextMessage(message: (Message.TextMessages) -> Unit) {
     if (this is Message.TextMessages) {
+        message.invoke(this)
+    }
+}
+
+fun Message.ifImageMessage(message: (Message.ImageMessages) -> Unit) {
+    if (this is Message.ImageMessages) {
         message.invoke(this)
     }
 }
@@ -139,4 +149,9 @@ fun String.calculateIntId(): Int {
     val finalNum = outputNumber.toIntOrNull() ?: 0
     val finalString = resultString.toIntOrNull() ?: 0
     return finalNum + finalString
+}
+
+internal fun Context.getContact(): Contact {
+    return ChatinganPreferences.read<Contact>(this, "contact")
+        ?: throw ChatinganException("Yout contact not saved")
 }

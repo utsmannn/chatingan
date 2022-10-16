@@ -1,14 +1,12 @@
-package com.utsman.chatingan.lib.utils
+package com.utsman.chatingan.lib.provider.freeimagehost
 
-import com.utsman.chatingan.lib.configuration.ChatinganConfiguration
 import com.utsman.chatingan.lib.data.network.image.ImageData
-import com.utsman.chatingan.lib.services.FreeImageHostWebServices
+import com.utsman.chatingan.lib.provider.ImageUploader
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
-class ImageUploader(private val configuration: ChatinganConfiguration) {
-
+class FreeImageUploader(private val key: String) : ImageUploader() {
     private val freeImageHostWebServices: FreeImageHostWebServices
         get() = FreeImageHostWebServices.getInstance()
 
@@ -20,9 +18,9 @@ class ImageUploader(private val configuration: ChatinganConfiguration) {
         )
     }
 
-    suspend fun upload(file: File): Result<ImageData> {
+    override suspend fun upload(file: File): Result<ImageData> {
         val uploadResponse = freeImageHostWebServices.uploadImage(
-            key = configuration.freeImageHostApiKey,
+            key = key,
             imagePart = file.createPartBody()
         )
 

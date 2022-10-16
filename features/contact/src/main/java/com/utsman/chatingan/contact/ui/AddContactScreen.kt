@@ -71,7 +71,7 @@ fun AddContactScreen(
     }
 
     val meContact: Contact = remember {
-        Chatingan.getInstance().getConfiguration().contact
+        Chatingan.getInstance().getContact()
     }
 
     Chatingan

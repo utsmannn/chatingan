@@ -109,9 +109,7 @@ fun SplashScreen(
                     fcmToken = token
                 }
 
-                Chatingan.updateConfig(context) {
-                    contact = meContact
-                }
+                Chatingan.updateContact(context, meContact)
 
                 navigationProvider.screenOf(
                     routeViewModel = mainViewModel,

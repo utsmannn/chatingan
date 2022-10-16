@@ -73,7 +73,7 @@ fun HomeScreen(
 
     val chatsState by viewModel.chatState.collectAsState()
     val meContact = remember {
-        Chatingan.getInstance().getConfiguration().contact
+        Chatingan.getInstance().getContact()
     }
 
     viewModel.getUser()
