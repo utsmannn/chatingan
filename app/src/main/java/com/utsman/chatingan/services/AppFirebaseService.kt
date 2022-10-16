@@ -6,9 +6,9 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.utsman.chatingan.R
 import com.utsman.chatingan.lib.Chatingan
-import com.utsman.chatingan.lib.calculateIntId
-import com.utsman.chatingan.lib.ifImageMessage
-import com.utsman.chatingan.lib.ifTextMessage
+import com.utsman.chatingan.lib.utils.calculateIntId
+import com.utsman.chatingan.lib.utils.ifImageMessage
+import com.utsman.chatingan.lib.utils.ifTextMessage
 import com.utsman.chatingan.lib.receiver.MessageNotifier
 
 class AppFirebaseService : FirebaseMessagingService() {
@@ -41,7 +41,7 @@ class AppFirebaseService : FirebaseMessagingService() {
         println("new token fcm ---")
         println(token)
         println("new token fcm --- end ")
-        Chatingan.getInstance().updateFcmToken(token)
+        Chatingan.getInstance().updateToken(token)
     }
 
 }

@@ -18,7 +18,6 @@ import androidx.compose.material.Button
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
-import androidx.compose.material.Text
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -38,13 +37,14 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.utsman.chatingan.common.event.doOnLoading
 import com.utsman.chatingan.common.event.doOnSuccess
+import com.utsman.chatingan.common.ui.component.ChatinganText
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.utils.ChatinganQrUtils
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.pair.ContactPairListener
-import com.utsman.chatingan.lib.isValid
+import com.utsman.chatingan.lib.utils.isValid
 import com.utsman.chatingan.navigation.LocalMainProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -155,7 +155,7 @@ fun AddContactScreen(
                 )
 
                 Button(onClick = { scanLauncher.launch(scanOptions) }) {
-                    Text(text = "Scan QR")
+                    ChatinganText(text = "Scan QR")
                 }
             }
         }
@@ -202,7 +202,7 @@ fun BottomSheetContact(
             Spacer(modifier = Modifier.height(12.dp))
             if (isExist) {
                 Spacer(modifier = Modifier.height(20.dp))
-                Text(text = "Contact has existing")
+                ChatinganText(text = "Contact has existing")
             }
             Button(onClick = {
                 coroutineScope.launch {
@@ -225,7 +225,7 @@ fun BottomSheetContact(
                 } else {
                     "Save contact"
                 }
-                Text(text = text)
+                ChatinganText(text = text)
             }
         }
     }
@@ -246,7 +246,7 @@ fun ContactView(contact: Contact) {
             contentDescription = ""
         )
 
-        Text(text = contact.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 4.sp)
-        Text(text = contact.email, fontWeight = FontWeight.Light)
+        ChatinganText(text = contact.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 4.sp)
+        ChatinganText(text = contact.email, fontWeight = FontWeight.Light)
     }
 }

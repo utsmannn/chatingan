@@ -21,11 +21,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,26 +39,18 @@ import coil.compose.AsyncImage
 import com.utsman.chatingan.common.event.defaultCompose
 import com.utsman.chatingan.common.event.onSuccess
 import com.utsman.chatingan.common.ui.clickableRipple
+import com.utsman.chatingan.common.ui.component.ChatinganText
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.common.ui.component.IconResChatDone
 import com.utsman.chatingan.common.ui.component.IconResChatDoneAll
-import com.utsman.chatingan.common.ui.component.IconResChatDoneAllRead
 import com.utsman.chatingan.common.ui.component.IconResChatFailure
 import com.utsman.chatingan.home.R
 import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
-import com.utsman.chatingan.lib.ellipsize
-import com.utsman.chatingan.lib.ifTextMessage
 import com.utsman.chatingan.navigation.LocalMainProvider
-import com.utsman.chatingan.navigation.NavigationProvider
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import org.koin.androidx.compose.get
 import org.koin.androidx.compose.getViewModel
 
 @Composable
@@ -94,7 +82,7 @@ fun HomeScreen(
         }
     ) {
         DefaultLayoutAppBar(title = "Chatingan") {
-            Text(text = meContact.id)
+            ChatinganText(text = meContact.id)
             chatsState.defaultCompose()
                 .onSuccess { chats ->
                     LazyColumn(
@@ -161,7 +149,7 @@ fun ChatItemScreen(
                 contentScale = ContentScale.Crop
             )
 
-            Text(
+            ChatinganText(
                 text = messageInfo.receiver.name,
                 fontWeight = FontWeight.Bold,
                 overflow = TextOverflow.Ellipsis,
@@ -236,7 +224,7 @@ fun ChatItemScreen(
                 .padding(horizontal = 12.dp)
 
             if (messageInfo.isTyping) {
-                Text(
+                ChatinganText(
                     text = "Typing....",
                     fontSize = 12.sp,
                     maxLines = 1,
@@ -247,7 +235,7 @@ fun ChatItemScreen(
             } else {
                 when (lastMessage) {
                     is Message.TextMessages -> {
-                        Text(
+                        ChatinganText(
                             text = lastMessage.messageBody,
                             fontSize = 12.sp,
                             maxLines = 1,
@@ -257,7 +245,7 @@ fun ChatItemScreen(
                         )
                     }
                     is Message.ImageMessages -> {
-                        Text(
+                        ChatinganText(
                             text = "[Image]",
                             fontSize = 12.sp,
                             maxLines = 1,
@@ -303,7 +291,7 @@ fun ChatItemScreen(
                     chatInfo.lastMessage.messageBody
                 }
 
-                Text(
+                ChatinganText(
                     text = subtitle,
                     fontSize = 12.sp,
                     maxLines = 1,
@@ -357,7 +345,7 @@ fun UnreadCount(modifier: Modifier, count: Int) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.End
     ) {
-        Text(
+        ChatinganText(
             text = count.toString(),
             fontSize = 8.sp,
             color = Color.White,

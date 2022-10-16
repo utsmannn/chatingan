@@ -23,6 +23,7 @@ import com.utsman.chatingan.chat.routes.ChatRoute
 import com.utsman.chatingan.common.event.doOnFailure
 import com.utsman.chatingan.common.event.doOnLoading
 import com.utsman.chatingan.common.event.onSuccess
+import com.utsman.chatingan.common.ui.component.ChatinganText
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.animateComposable
 import com.utsman.chatingan.contact.routes.ContactRoute
@@ -72,7 +73,7 @@ fun MainScreen() {
         Button(onClick = {
             navigationProvider.navigateToSplash()
         }) {
-            Text(text = "Start")
+            ChatinganText(text = "Start")
         }
     }
 }
@@ -89,7 +90,7 @@ fun SplashScreen(
     userState
         .doOnLoading {
             ColumnCenter {
-                Text(text = "Setting up..")
+                ChatinganText(text = "Setting up..")
                 CircularProgressIndicator(modifier = Modifier.padding(20.dp))
             }
         }

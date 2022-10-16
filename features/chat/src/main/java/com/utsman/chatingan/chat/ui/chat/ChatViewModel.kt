@@ -32,6 +32,8 @@ class ChatViewModel(
     /*val cameraSessionId: Flow<String>
         get() = _cameraSessionId*/
 
+    val onMessageUpdated: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
     private val _pagingData: MutableStateFlow<PagingData<Message>> = MutableStateFlow(PagingData.empty())
     val pagingData: Flow<PagingData<Message>>
         get() = _pagingData

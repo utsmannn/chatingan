@@ -72,13 +72,13 @@ fun DefaultLayoutAppBar(
             if (onBack == null) {
                 TopAppBar(
                     title = {
-                        Text(text = title)
+                        ChatinganText(text = title)
                     }
                 )
             } else {
                 TopAppBar(
                     title = {
-                        Text(text = title)
+                        ChatinganText(text = title)
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {

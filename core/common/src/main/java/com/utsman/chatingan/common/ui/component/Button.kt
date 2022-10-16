@@ -46,7 +46,7 @@ fun ButtonImage(
                 .size(20.dp)
                 .padding(end = 6.dp)
         )
-        Text(text)
+        ChatinganText(text)
     }
 }
 

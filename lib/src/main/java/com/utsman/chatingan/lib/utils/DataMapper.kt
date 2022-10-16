@@ -7,8 +7,6 @@ import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
 import com.utsman.chatingan.lib.data.transaction.ContactAndLastMessage
-import com.utsman.chatingan.lib.toDate
-import com.utsman.chatingan.lib.toLong
 
 object DataMapper {
 

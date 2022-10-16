@@ -24,7 +24,7 @@ class ChatRepositoryImpl : ChatRepository {
         val newScope = scope + Dispatchers.IO
         return Chatingan
             .getInstance()
-            .getAllMessage(contact, true, 10, true)
+            .getAllMessage(contact, true, 10, false)
             .distinctUntilChanged()
             .cachedIn(newScope)
     }

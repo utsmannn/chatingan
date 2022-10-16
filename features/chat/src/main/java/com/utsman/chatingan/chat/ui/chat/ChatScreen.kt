@@ -29,7 +29,6 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.contentColorFor
@@ -68,6 +67,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemsIndexed
 import coil.compose.AsyncImage
 import com.utsman.chatingan.common.DateUtils
+import com.utsman.chatingan.common.ui.component.ChatinganText
 import com.utsman.chatingan.common.ui.component.DURATION_ANIMATION_TRANSITION
 import com.utsman.chatingan.common.ui.component.Gray50
 import com.utsman.chatingan.common.ui.component.IconResChatDone
@@ -106,9 +106,6 @@ fun ChatScreen(
     viewModel: ChatViewModel = getViewModel()
 ) {
     val navigationProvider = LocalMainProvider.current.navProvider()
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-
     val chatingan = LocalMainProvider.current.chatingan()
 
     DisposableEffect(Unit) {
@@ -180,9 +177,11 @@ fun ChatContent(
     val scrollState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    val imageResult by viewModel.imageFileState.collectAsState()
-
     var isUpdatedMessage by remember {
+        mutableStateOf(false)
+    }
+
+    var isJumpToBottom by remember {
         mutableStateOf(false)
     }
 
@@ -196,22 +195,16 @@ fun ChatContent(
         viewModel.getMessages(contact)
     }
 
-
-    val refreshMessage = {
-        scope.launch {
-            isUpdatedMessage = false
-            pagingMessages.refresh()
-            delay(500)
-            scrollState.animateScrollToItem(0)
-        }
-    }
-
-    scope.launch {
+    remember {
         activityProvider.chatingan().onMessageUpdate(contact) {
-            isUpdatedMessage = true
-            val messageIndex = scrollState.firstVisibleItemIndex
-            if (messageIndex == 0) {
-                refreshMessage()
+            val scrollPosition = scrollState.firstVisibleItemIndex
+
+            if (scrollPosition in 0..5) {
+                isUpdatedMessage = false
+                delay(500)
+                scrollState.scrollToItem(0)
+            } else {
+                isUpdatedMessage = true
             }
         }
     }
@@ -224,7 +217,9 @@ fun ChatContent(
                     modifier = Modifier.scale(0.7f),
                     onClick = {
                         scope.launch {
-                            refreshMessage()
+                            //refreshMessage()
+                            isUpdatedMessage = false
+                            scrollState.scrollToItem(0)
                         }
                     },
                     content = {
@@ -249,12 +244,6 @@ fun ChatContent(
                         item.getChildId()
                     },
                     itemContent = { index, item ->
-                        if (index == 0) {
-                            if (scrollState.firstVisibleItemIndex == 0) {
-                                refreshMessage()
-                            }
-                        }
-
                         if (item != null) {
                             MessageItem(
                                 contact = contact,
@@ -328,7 +317,7 @@ fun TopBarChat(
                 Column(
                     modifier = Modifier.padding(start = 12.dp, end = 12.dp)
                 ) {
-                    Text(
+                    ChatinganText(
                         text = contact.name,
                         style = MaterialTheme.typography.h6,
                         overflow = TextOverflow.Ellipsis
@@ -338,7 +327,7 @@ fun TopBarChat(
                         enter = expandVertically(),
                         exit = shrinkVertically()
                     ) {
-                        Text(text = "Typing...", fontSize = 12.sp)
+                        ChatinganText(text = "Typing...", fontSize = 12.sp)
                     }
                 }
 
@@ -404,7 +393,7 @@ fun BottomBarChat(
                 focusManager.clearFocus(true)
             },
             content = {
-                Text(text = "send")
+                ChatinganText(text = "send")
             })
     }
 }
@@ -484,7 +473,7 @@ fun TextMessageItem(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
+                    ChatinganText(
                         text = DateUtils.toReadable(message.date),
                         fontSize = 11.sp,
                         textAlign = TextAlign.End
@@ -540,7 +529,7 @@ fun TextMessageItem(
                         bottom.linkTo(indicatorRow.top)
                     }
 
-                Text(
+                ChatinganText(
                     text = message.messageBody,
                     modifier = modifierBody
                         .widthIn(min = 60.dp)
@@ -632,7 +621,7 @@ fun ImageMessageItem(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
+                    ChatinganText(
                         text = DateUtils.toReadable(message.date),
                         fontSize = 11.sp,
                         textAlign = TextAlign.End
@@ -702,7 +691,7 @@ fun ImageMessageItem(
                             .clip(imageClip)
                     )
                     if (caption.isNotEmpty()) {
-                        Text(text = message.imageBody.caption)
+                        ChatinganText(text = message.imageBody.caption)
                     }
                 }
             }
@@ -725,7 +714,7 @@ fun DividerMessageItem(
     ) {
         MessageItem(contact, message.message, viewModel, false)
 
-        Text(
+        ChatinganText(
             text = ChatinganDividerUtils.generateDateDividerText(message.superDate),
             modifier = Modifier
                 .background(Gray50, shape = RoundedCornerShape(6.dp))

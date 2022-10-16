@@ -1,4 +1,4 @@
-package com.utsman.chatingan.lib
+package com.utsman.chatingan.lib.utils
 
 import android.content.Context
 import com.google.gson.Gson
@@ -10,9 +10,27 @@ import com.utsman.chatingan.lib.data.entity.MessageEntity
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.preferences.ChatinganPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import java.lang.reflect.Type
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.util.*
+import kotlin.coroutines.CoroutineContext
+
+internal class CoroutineScopeIO : CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = SupervisorJob() + Dispatchers.IO
+}
+
+@Suppress("FunctionName")
+internal fun IOScope(): CoroutineScope = CoroutineScopeIO()
+
+// Date.from(Instant.now())
+fun now(): Date {
+    return Calendar.getInstance().time
+}
 
 fun Long.toDate(): Date {
     val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm:ss")

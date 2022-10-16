@@ -1,7 +1,7 @@
 package com.utsman.chatingan.lib.data.model
 
 import com.utsman.chatingan.lib.utils.Utils
-import com.utsman.chatingan.lib.toDate
+import com.utsman.chatingan.lib.utils.toDate
 import java.util.Date
 
 data class Contact(

@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.utsman.chatingan.common.ui.component.ChatinganText
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 
 
@@ -27,7 +28,7 @@ fun LoadingScreen(modifier: Modifier = Modifier.wrapContentWidth()) {
 @Composable
 fun EmptyScreen() {
     ColumnCenter {
-        Text(text = "Empty")
+        ChatinganText(text = "Empty")
     }
 }
 
@@ -39,7 +40,7 @@ fun IdleScreen(content: @Composable () -> Unit) {
 @Composable
 fun FailureScreen(message: String) {
     ColumnCenter {
-        Text(text = message, color = Color.Red)
+        ChatinganText(text = message, color = Color.Red)
     }
 }
 

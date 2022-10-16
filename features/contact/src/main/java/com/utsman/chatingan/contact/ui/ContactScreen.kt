@@ -38,6 +38,7 @@ import com.utsman.chatingan.common.ui.EmptyScreen
 import com.utsman.chatingan.common.ui.FailureScreen
 import com.utsman.chatingan.common.ui.LoadingScreen
 import com.utsman.chatingan.common.ui.clickableRipple
+import com.utsman.chatingan.common.ui.component.ChatinganText
 import com.utsman.chatingan.common.ui.component.ColumnCenter
 import com.utsman.chatingan.common.ui.component.DefaultLayoutAppBar
 import com.utsman.chatingan.lib.Chatingan
@@ -141,7 +142,7 @@ fun ContactItemScreen(
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
-            Text(
+            ChatinganText(
                 text = contact.name,
                 fontWeight = FontWeight.Bold,
                 overflow = TextOverflow.Ellipsis,
@@ -154,7 +155,7 @@ fun ContactItemScreen(
                     }
             )
 
-            Text(
+            ChatinganText(
                 text = contact.email,
                 fontSize = 12.sp,
                 maxLines = 1,

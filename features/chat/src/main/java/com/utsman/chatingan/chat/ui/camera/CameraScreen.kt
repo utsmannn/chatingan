@@ -50,6 +50,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.utsman.chatingan.chat.routes.LocalImageStateHelper
+import com.utsman.chatingan.common.ui.component.ChatinganText
 import com.utsman.chatingan.lib.data.model.Contact
 import com.utsman.chatingan.navigation.LocalMainProvider
 import id.zelory.compressor.Compressor
@@ -196,7 +197,6 @@ fun SendBox(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val text by viewModel.textState.collectAsState("")
-    val scope = rememberCoroutineScope()
 
     Row(
         modifier = Modifier
@@ -229,7 +229,7 @@ fun SendBox(
                 focusManager.clearFocus(true)
             },
             content = {
-                Text(text = "send")
+                ChatinganText(text = "send")
             })
     }
 }

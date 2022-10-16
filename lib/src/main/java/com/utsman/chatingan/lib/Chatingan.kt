@@ -22,15 +22,14 @@ interface Chatingan {
         onMessageIncoming: (Contact, Message) -> Unit = { _, _ -> }
     )
 
-    fun updateFcmToken(fcmToken: String)
-    suspend fun onMessageUpdate(contact: Contact, newMessage: suspend (Message?) -> Unit)
+    fun updateToken(fcmToken: String)
+    fun onMessageUpdate(contact: Contact, newMessage: suspend (Message?) -> Unit)
 
     suspend fun addContact(contact: Contact)
     suspend fun pairContact(contact: Contact)
     fun getAllContact(): Flow<List<Contact>>
     fun getContact(contactId: String): Flow<Contact>
     fun getContactByEmail(email: String): Flow<Contact>
-
 
     fun createNewTextMessage(
         contact: Contact,

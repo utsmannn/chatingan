@@ -2,12 +2,10 @@ package com.utsman.chatingan.lib.data.model
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.utsman.chatingan.lib.Chatingan
 import com.utsman.chatingan.lib.utils.Utils
-import com.utsman.chatingan.lib.toDate
+import com.utsman.chatingan.lib.utils.toDate
 import java.io.File
 import java.util.Date
-import java.util.UUID
 
 /**
  * @param superDate use in divider message

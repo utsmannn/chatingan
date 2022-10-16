@@ -2,11 +2,6 @@ package com.utsman.chatingan.navigation
 
 import android.net.Uri
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import com.utsman.chatingan.lib.toJson
-import com.utsman.chatingan.lib.typeToken
-import kotlin.reflect.KClass
-import kotlin.reflect.javaType
 
 open class Route(
     private val value: String = ""

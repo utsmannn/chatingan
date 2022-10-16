@@ -3,7 +3,7 @@ package com.utsman.chatingan.lib.preferences
 import android.content.Context
 import android.content.SharedPreferences
 import com.utsman.chatingan.lib.utils.Utils
-import com.utsman.chatingan.lib.toJson
+import com.utsman.chatingan.lib.utils.toJson
 
 object ChatinganPreferences {
 
