@@ -28,7 +28,7 @@ internal class CoroutineScopeIO : CoroutineScope {
 internal fun IOScope(): CoroutineScope = CoroutineScopeIO()
 
 // Date.from(Instant.now())
-fun now(): Date {
+internal fun now(): Date {
     return Calendar.getInstance().time
 }
 
@@ -54,7 +54,7 @@ fun gsonDate(): Gson {
         .create()
 }
 
-inline fun <reified T> T.toJson(): String {
+internal inline fun <reified T> T.toJson(): String {
     val type = typeToken()
     return Gson().toJson(this, type)
 }
@@ -83,7 +83,7 @@ fun String.ellipsize(max: Int): String {
     return this.substring(0, end) + "..."
 }
 
-fun MessageEntity.changeStatus(status: Message.Status): MessageEntity {
+internal fun MessageEntity.changeStatus(status: Message.Status): MessageEntity {
     return MessageEntity(
         id = id,
         type = type,
@@ -95,7 +95,7 @@ fun MessageEntity.changeStatus(status: Message.Status): MessageEntity {
     )
 }
 
-fun ContactEntity.setTyping(isTyping: Boolean): ContactEntity {
+internal fun ContactEntity.setTyping(isTyping: Boolean): ContactEntity {
     return ContactEntity(
         id = id,
         name = name,

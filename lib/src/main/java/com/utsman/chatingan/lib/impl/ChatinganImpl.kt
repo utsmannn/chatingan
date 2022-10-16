@@ -129,9 +129,7 @@ class ChatinganImpl(
                     updateContact(messageNotifier)
                 }
             }
-            else -> {
-
-            }
+            else -> {}
         }
     }
 
@@ -173,26 +171,19 @@ class ChatinganImpl(
         if (chatinganDao.isContactExist(entity.email)) throw ChatinganException("Contact exists")
 
         chatinganDao.insertContact(entity)
+        messageEmitter.sendNotifier(
+            contact = contact,
+            json = getContact().toJson(),
+            notificationType = MessageNotifier.NotificationType.CONTACT_PAIR,
+            messageType = Message.Type.OTHER,
+            title = getContact().name,
+            subtitle = "Success add ${getContact().name}"
+        )
     }
 
     override suspend fun pairContact(contact: Contact) {
-        val entity = DataMapper.mapContactToEntity(contact)
-        if (chatinganDao.isContactExist(entity.email)) {
-            val throwable = ChatinganException("Contact exists")
-            _chatinganQr.setPairListenerFailure(throwable)
-        } else {
-            chatinganDao.insertContact(entity)
-            messageEmitter.sendNotifier(
-                contact = contact,
-                json = getContact().toJson(),
-                notificationType = MessageNotifier.NotificationType.CONTACT_PAIR,
-                messageType = Message.Type.OTHER,
-                title = getContact().name,
-                subtitle = "Success add ${getContact().name}"
-            )
-
-            _chatinganQr.setPairListenerSuccess(contact)
-        }
+        addContact(contact)
+        _chatinganQr.setPairListenerSuccess(contact)
     }
 
     override fun getAllContact(): Flow<List<Contact>> {

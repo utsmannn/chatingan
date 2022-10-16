@@ -181,10 +181,6 @@ fun ChatContent(
         mutableStateOf(false)
     }
 
-    var isJumpToBottom by remember {
-        mutableStateOf(false)
-    }
-
     val activityProvider = LocalMainProvider.current
 
     val pagingMessages: LazyPagingItems<Message> = viewModel.pagingData.collectAsLazyPagingItems()
@@ -348,7 +344,6 @@ fun BottomBarChat(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val text by viewModel.textState.collectAsState("")
-    val scope = rememberCoroutineScope()
 
     Row(
         modifier = modifier

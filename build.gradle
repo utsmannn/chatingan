@@ -15,14 +15,14 @@ buildscript {
         script_dependencies_fcm = "$rootDir/gradle/scripts/dependencies.fcm.gradle"
 
         module_lib = project(":lib")
-        module_core_common = project(":core:common")
-        module_core_network = project(":core:network")
-        module_core_auth = project(":core:auth")
-        module_core_navigation = project(":core:navigation")
+        module_core_common = project(":compose:core:common")
+        module_core_network = project(":compose:core:network")
+        module_core_auth = project(":compose:core:auth")
+        module_core_navigation = project(":compose:core:navigation")
 
-        module_feature_home = project(":features:home")
-        module_feature_contact = project(":features:contact")
-        module_feature_chat = project(":features:chat")
+        module_feature_home = project(":compose:features:home")
+        module_feature_contact = project(":compose:features:contact")
+        module_feature_chat = project(":compose:features:chat")
     }
 
     dependencies {

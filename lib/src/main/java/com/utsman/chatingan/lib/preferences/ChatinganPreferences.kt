@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import com.utsman.chatingan.lib.utils.Utils
 import com.utsman.chatingan.lib.utils.toJson
 
-object ChatinganPreferences {
+internal object ChatinganPreferences {
 
     private const val CHATINGAN_PREF = "ChatinganPreferences"
 

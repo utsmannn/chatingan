@@ -8,7 +8,7 @@ import com.utsman.chatingan.lib.data.model.Message
 import com.utsman.chatingan.lib.data.model.MessageInfo
 import com.utsman.chatingan.lib.data.transaction.ContactAndLastMessage
 
-object DataMapper {
+internal object DataMapper {
 
     fun mapContactToEntity(contact: Contact): ContactEntity {
         return ContactEntity(

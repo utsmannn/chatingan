@@ -10,18 +10,18 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url = "https://artifactory.cronapp.io/public-release/"
-        }
+        maven { url = "https://artifactory.cronapp.io/public-release/" }
+        maven { url "https://jitpack.io" }
     }
 }
 rootProject.name = "chatingan"
-include ':app'
-include ':core:common'
-include ':core:network'
-include ':core:auth'
-include ':features:home'
-include ':features:contact'
-include ':features:chat'
-include ':core:navigation'
+include ':compose:app'
+include ':compose:core:common'
+include ':compose:core:network'
+include ':compose:core:auth'
+include ':compose:features:home'
+include ':compose:features:contact'
+include ':compose:features:chat'
+include ':compose:core:navigation'
+
 include ':lib'
