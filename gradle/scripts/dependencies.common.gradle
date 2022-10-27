@@ -16,4 +16,6 @@ dependencies {
     androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
     debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_version"
+
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.0'
 }
