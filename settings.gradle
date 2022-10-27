@@ -24,4 +24,4 @@ include ':compose:features:contact'
 include ':compose:features:chat'
 include ':compose:core:navigation'
 
-include ':lib'
+include ':chatingan'

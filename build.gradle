@@ -14,7 +14,7 @@ buildscript {
         script_dependencies_auth = "$rootDir/gradle/scripts/dependencies.auth.gradle"
         script_dependencies_fcm = "$rootDir/gradle/scripts/dependencies.fcm.gradle"
 
-        module_lib = project(":lib")
+        module_lib = project(":chatingan")
         module_core_common = project(":compose:core:common")
         module_core_network = project(":compose:core:network")
         module_core_auth = project(":compose:core:auth")
